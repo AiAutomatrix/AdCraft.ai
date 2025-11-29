@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
@@ -17,7 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { Ad } from '@/lib/types';
 import { suggestAdImprovementsAction } from '@/lib/actions';
 
-import { ArrowLeft, Copy, Loader2, Save, Sparkles, Trash2, Wand2 } from 'lucide-react';
+import { ArrowLeft, Copy, Loader2, Save, Sparkles, Trash2, Wand2, Upload, X } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,11 +32,14 @@ import {
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import Image from 'next/image';
 
 
 const adSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters long.'),
   content: z.string().min(10, 'Ad content must be at least 10 characters long.'),
+  images: z.array(z.string()).optional(),
 });
 
 type AdFormData = z.infer<typeof adSchema>;
@@ -51,6 +54,7 @@ export default function EditAdPage() {
   const params = useParams();
   const id = params.id as string;
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [ads, setAds] = useLocalStorage<Ad[]>('saved-ads', []);
   const [ad, setAd] = useState<Ad | null>(null);
@@ -62,7 +66,7 @@ export default function EditAdPage() {
 
   const form = useForm<AdFormData>({
     resolver: zodResolver(adSchema),
-    defaultValues: { title: '', content: '' },
+    defaultValues: { title: '', content: '', images: [] },
   });
 
   const adData = useMemo(() => {
@@ -84,12 +88,12 @@ export default function EditAdPage() {
   useEffect(() => {
     if (adData) {
       setAd(adData);
-      form.reset({ title: adData.title, content: adData.content });
-    } else {
+      form.reset({ title: adData.title, content: adData.content, images: adData.images || [] });
+    } else if (!isNew) {
       toast({ title: 'Ad not found', variant: 'destructive' });
       router.replace('/saved');
     }
-  }, [adData, form, router, toast]);
+  }, [adData, form, router, toast, isNew]);
 
   const onSubmit = (data: AdFormData) => {
     setIsSaving(true);
@@ -97,7 +101,9 @@ export default function EditAdPage() {
       id: isNew ? uuidv4() : id,
       type: ad?.type || 'sale',
       createdAt: ad?.createdAt || new Date().toISOString(),
-      ...data,
+      title: data.title,
+      content: data.content,
+      images: data.images,
     };
     
     setAds(isNew ? [...ads, newAd] : ads.map(a => (a.id === id ? newAd : a)));
@@ -124,11 +130,13 @@ export default function EditAdPage() {
   
   const handleImproveWithAI = async () => {
     setIsImproving(true);
-    const currentContent = form.getValues('content');
+    setAiSuggestions(null);
+    const currentValues = form.getValues();
     const result = await suggestAdImprovementsAction({
-        adCopy: currentContent,
+        adCopy: currentValues.content,
         vehicleDescription: '', // Can be enhanced later
-        adType: ad?.type || 'sale'
+        adType: ad?.type || 'sale',
+        images: currentValues.images
     });
 
     if (result.error) {
@@ -146,10 +154,36 @@ export default function EditAdPage() {
     }
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      const currentImages = form.getValues('images') || [];
+      const newImages: string[] = [];
+      
+      Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          newImages.push(reader.result as string);
+          if (newImages.length === files.length) {
+            form.setValue('images', [...currentImages, ...newImages]);
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  };
+  
+  const removeImage = (index: number) => {
+    const currentImages = form.getValues('images') || [];
+    const updatedImages = currentImages.filter((_, i) => i !== index);
+    form.setValue('images', updatedImages);
+  };
 
   if (!ad) {
     return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
+  
+  const images = form.watch('images') || [];
 
   return (
     <div className="container py-12">
@@ -158,47 +192,85 @@ export default function EditAdPage() {
         </Button>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-          <Card>
-            <CardHeader>
-                <div className="flex justify-between items-start">
-                    <div>
-                        <CardTitle className="font-headline text-3xl">Ad Editor</CardTitle>
-                        <CardDescription>
-                            {isNew ? "Here's your new AI-generated ad. Refine it and save it." : "Edit your saved ad."}
-                        </CardDescription>
+            <div className="grid md:grid-cols-2 gap-8">
+            <Card>
+                <CardHeader>
+                    <CardTitle className="font-headline">Vehicle Images</CardTitle>
+                    <CardDescription>Add or remove photos of the vehicle.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {images.length > 0 ? (
+                        <Carousel className="w-full max-w-full">
+                            <CarouselContent>
+                                {images.map((src, index) => (
+                                <CarouselItem key={index} className="relative">
+                                    <Image src={src} alt={`Vehicle image ${index + 1}`} width={600} height={400} className="w-full h-auto rounded-md object-contain max-h-[400px]" />
+                                    <Button variant="destructive" size="icon" className="absolute top-2 right-2 h-8 w-8" onClick={() => removeImage(index)}>
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                </CarouselItem>
+                                ))}
+                            </CarouselContent>
+                             {images.length > 1 && <>
+                                <CarouselPrevious className="left-2" />
+                                <CarouselNext className="right-2" />
+                             </>}
+                        </Carousel>
+                    ) : (
+                        <div className="flex justify-center items-center h-48 bg-muted rounded-md">
+                            <p className="text-muted-foreground">No images uploaded.</p>
+                        </div>
+                    )}
+                    <Button type="button" variant="outline" className="w-full mt-4" onClick={() => fileInputRef.current?.click()}>
+                        <Upload className="mr-2 h-4 w-4" />
+                        Upload More Photos
+                    </Button>
+                    <Input type="file" accept="image/*" multiple className="hidden" ref={fileInputRef} onChange={handleImageUpload} />
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <CardTitle className="font-headline text-3xl">Ad Editor</CardTitle>
+                            <CardDescription>
+                                {isNew ? "Here's your new AI-generated ad. Refine it and save it." : "Edit your saved ad."}
+                            </CardDescription>
+                        </div>
+                        <Badge variant={ad.type === 'sale' ? 'default' : 'secondary'} className="capitalize text-sm">{ad.type}</Badge>
                     </div>
-                    <Badge variant={ad.type === 'sale' ? 'default' : 'secondary'} className="capitalize text-sm">{ad.type}</Badge>
-                </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-lg">Ad Title</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., For Sale: 2020 Ford Mustang" {...field} className="text-base" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="content"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-lg">Ad Content</FormLabel>
-                    <FormControl>
-                      <Textarea placeholder="Your ad copy will appear here..." {...field} className="min-h-[300px] text-base" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel className="text-lg">Ad Title</FormLabel>
+                        <FormControl>
+                        <Input placeholder="e.g., For Sale: 2020 Ford Mustang" {...field} className="text-base" />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="content"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel className="text-lg">Ad Content</FormLabel>
+                        <FormControl>
+                        <Textarea placeholder="Your ad copy will appear here..." {...field} className="min-h-[250px] text-base" />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                </CardContent>
+            </Card>
+            </div>
 
           <div className="flex flex-col sm:flex-row gap-2 justify-between">
             <div className="flex gap-2">
@@ -221,7 +293,7 @@ export default function EditAdPage() {
                         </AlertDialogContent>
                     </AlertDialog>
                 )}
-                 <Dialog>
+                 <Dialog onOpenChange={(open) => !open && setAiSuggestions(null)}>
                     <DialogTrigger asChild>
                         <Button type="button" variant="outline" onClick={handleImproveWithAI} className="bg-accent/10 text-accent-foreground border-accent/30 hover:bg-accent/20">
                             {isImproving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
@@ -231,7 +303,7 @@ export default function EditAdPage() {
                     <DialogContent className="max-w-2xl">
                          <DialogHeader>
                             <DialogTitle className="font-headline text-2xl flex items-center gap-2"><Sparkles className="h-6 w-6 text-primary" /> AI-Powered Improvements</DialogTitle>
-                            <DialogDescription>Here are suggestions to make your ad even better.</DialogDescription>
+                            <DialogDescription>Here are suggestions based on your ad content and images to make your ad even better.</DialogDescription>
                         </DialogHeader>
                         {isImproving ? (
                              <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>
@@ -253,7 +325,7 @@ export default function EditAdPage() {
                                 <Button onClick={applyAISuggestions} className="w-full mt-4">Apply Suggestions</Button>
                             </div>
                         ) : (
-                            <div className="text-center p-8">No suggestions available.</div>
+                            <div className="text-center p-8">Could not load AI suggestions. Please try again.</div>
                         )}
                     </DialogContent>
                  </Dialog>
@@ -273,5 +345,3 @@ export default function EditAdPage() {
     </div>
   );
 }
-
-    

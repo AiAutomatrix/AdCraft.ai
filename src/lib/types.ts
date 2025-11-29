@@ -4,4 +4,5 @@ export type Ad = {
   content: string;
   type: 'sale' | 'wanted';
   createdAt: string;
+  images?: string[];
 };

@@ -54,6 +54,7 @@ export default function GenerateForSaleAd() {
       sessionStorage.setItem('generatedAd_new', JSON.stringify({
         title: `For Sale: ${file.name.split('.')[0]}`,
         content: result.adText,
+        images: [previewUrl],
         type: 'sale'
       }));
       router.push('/edit/new');
