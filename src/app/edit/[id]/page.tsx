@@ -15,9 +15,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useToast } from '@/hooks/use-toast';
 import type { Ad } from '@/lib/types';
-import { suggestAdImprovementsAction } from '@/lib/actions';
+import { suggestAdImprovementsAction, generateAdTitleAction } from '@/lib/actions';
 
-import { ArrowLeft, Copy, Loader2, Save, Sparkles, Trash2, Wand2, Upload, X } from 'lucide-react';
+import { ArrowLeft, Copy, Loader2, Save, Sparkles, Trash2, Wand2, Upload, X, RefreshCw } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -62,6 +62,7 @@ export default function EditAdPage() {
 
   const [aiSuggestions, setAiSuggestions] = useState<AISuggestions | null>(null);
   const [isImproving, setIsImproving] = useState(false);
+  const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   const form = useForm<AdFormData>({
@@ -145,6 +146,24 @@ export default function EditAdPage() {
         setAiSuggestions(result);
     }
     setIsImproving(false);
+  };
+
+  const handleGenerateTitle = async () => {
+    setIsGeneratingTitle(true);
+    const currentValues = form.getValues();
+    const result = await generateAdTitleAction({
+        adContent: currentValues.content,
+        adType: ad?.type || 'sale',
+        images: currentValues.images,
+    });
+
+    if (result.error) {
+        toast({ title: "Title Generation Failed", description: result.error, variant: 'destructive' });
+    } else if (result.title) {
+        form.setValue('title', result.title, { shouldValidate: true });
+        toast({ title: 'New Title Generated!', description: 'The ad title has been updated.' });
+    }
+    setIsGeneratingTitle(false);
   };
   
   const applyAISuggestions = () => {
@@ -247,7 +266,13 @@ export default function EditAdPage() {
                     name="title"
                     render={({ field }) => (
                     <FormItem>
-                        <FormLabel className="text-lg">Ad Title</FormLabel>
+                        <div className="flex justify-between items-center">
+                            <FormLabel className="text-lg">Ad Title</FormLabel>
+                            <Button type="button" size="sm" variant="ghost" onClick={handleGenerateTitle} disabled={isGeneratingTitle}>
+                                {isGeneratingTitle ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                                Generate
+                            </Button>
+                        </div>
                         <FormControl>
                         <Input placeholder="e.g., For Sale: 2020 Ford Mustang" {...field} className="text-base" />
                         </FormControl>
