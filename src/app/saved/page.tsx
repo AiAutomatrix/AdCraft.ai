@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowRight, Copy, Edit, FilePlus, Trash2 } from 'lucide-react';
+import { ArrowRight, Copy, Edit, FilePlus, Loader2, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -20,11 +20,17 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
   } from "@/components/ui/alert-dialog"
+import { useEffect, useState } from 'react';
 
 export default function SavedAdsPage() {
   const [ads, setAds] = useLocalStorage<Ad[]>('saved-ads', []);
   const router = useRouter();
   const { toast } = useToast();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const sortedAds = [...ads].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
@@ -37,6 +43,16 @@ export default function SavedAdsPage() {
     navigator.clipboard.writeText(content);
     toast({ title: "Copied to Clipboard", description: "The ad content is ready to be pasted." });
   };
+
+  if (!isClient) {
+    return (
+        <div className="container py-12">
+            <div className="flex justify-center items-center h-full">
+                <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+        </div>
+    );
+  }
 
   if (ads.length === 0) {
     return (
@@ -58,7 +74,7 @@ export default function SavedAdsPage() {
   return (
     <div className="container py-12">
         <div className="flex justify-between items-center mb-8">
-            <div >
+            <div>
                 <h1 className="font-headline text-4xl font-bold tracking-tighter sm:text-5xl">My Saved Ads</h1>
                 <p className="mt-2 text-muted-foreground">Here are all the ads you've crafted.</p>
             </div>
