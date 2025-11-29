@@ -283,7 +283,7 @@ export default function EditAdPage() {
                     </FormItem>
                     )}
                 />
-                <Tabs defaultValue="edit" className="w-full">
+                <Tabs defaultValue={isNew ? 'edit' : 'preview'} className="w-full">
                     <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="edit">Edit</TabsTrigger>
                         <TabsTrigger value="preview">Preview</TabsTrigger>
