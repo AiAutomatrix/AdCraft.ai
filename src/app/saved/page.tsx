@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowRight, Copy, Edit, FilePlus, Loader2, Trash2 } from 'lucide-react';
+import { ArrowRight, Car, Copy, Edit, FilePlus, Loader2, Search, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -21,6 +21,7 @@ import {
     AlertDialogTrigger,
   } from "@/components/ui/alert-dialog"
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 
 export default function SavedAdsPage() {
   const [ads, setAds] = useLocalStorage<Ad[]>('saved-ads', []);
@@ -36,7 +37,7 @@ export default function SavedAdsPage() {
 
   const deleteAd = (id: string) => {
     setAds(ads.filter(ad => ad.id !== id));
-    toast({ title: "Ad Deleted", description: "The ad has been successfully removed." });
+    toast({ title: "Ad Deleted", description: "The ad has been successfully removed.", variant: "destructive" });
   };
 
   const copyAd = (content: string) => {
@@ -87,20 +88,27 @@ export default function SavedAdsPage() {
       </div>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {sortedAds.map(ad => (
-          <Card key={ad.id} className="flex flex-col">
+          <Card key={ad.id} className="flex flex-col overflow-hidden">
+            <div className="aspect-video bg-muted flex items-center justify-center">
+                {ad.images && ad.images.length > 0 ? (
+                    <Image src={ad.images[0]} alt={ad.title} width={300} height={200} className="w-full h-full object-cover"/>
+                ) : (
+                    ad.type === 'sale' ? <Car className="w-16 h-16 text-muted-foreground" /> : <Search className="w-16 h-16 text-muted-foreground" />
+                )}
+            </div>
             <CardHeader>
               <div className="flex justify-between items-start">
                 <CardTitle className="font-headline text-xl pr-2 line-clamp-2">{ad.title}</CardTitle>
-                <Badge variant={ad.type === 'sale' ? 'default' : 'secondary'}>{ad.type}</Badge>
+                <Badge variant={ad.type === 'sale' ? 'default' : 'secondary'} className="capitalize">{ad.type}</Badge>
               </div>
               <CardDescription>
                 Created on {new Date(ad.createdAt).toLocaleDateString()}
               </CardDescription>
             </CardHeader>
             <CardContent className="flex-grow">
-              <p className="text-sm text-muted-foreground line-clamp-4">{ad.content}</p>
+              <p className="text-sm text-muted-foreground line-clamp-3">{ad.content}</p>
             </CardContent>
-            <CardFooter className="flex gap-2 justify-end">
+            <CardFooter className="flex gap-2 justify-end mt-auto pt-4">
               <Button variant="ghost" size="icon" onClick={() => copyAd(ad.content)} title="Copy">
                 <Copy className="h-4 w-4" />
               </Button>
@@ -123,7 +131,7 @@ export default function SavedAdsPage() {
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => deleteAd(ad.id)}>Delete</AlertDialogAction>
+                    <AlertDialogAction onClick={() => deleteAd(ad.id)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
