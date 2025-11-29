@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
+import ReactMarkdown from 'react-markdown';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,6 +35,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import Image from 'next/image';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 
 const adSchema = z.object({
@@ -203,6 +205,7 @@ export default function EditAdPage() {
   }
   
   const images = form.watch('images') || [];
+  const adContent = form.watch('content');
 
   return (
     <div className="container py-12">
@@ -280,19 +283,30 @@ export default function EditAdPage() {
                     </FormItem>
                     )}
                 />
-                <FormField
-                    control={form.control}
-                    name="content"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel className="text-lg">Ad Content</FormLabel>
-                        <FormControl>
-                        <Textarea placeholder="Your ad copy will appear here..." {...field} className="min-h-[250px] text-base" />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
+                <Tabs defaultValue="edit" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="edit">Edit</TabsTrigger>
+                        <TabsTrigger value="preview">Preview</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="edit">
+                        <FormField
+                            control={form.control}
+                            name="content"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel className="sr-only">Ad Content</FormLabel>
+                                <FormControl>
+                                <Textarea placeholder="Your ad copy will appear here..." {...field} className="min-h-[250px] text-base" />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                    </TabsContent>
+                    <TabsContent value="preview" className="prose dark:prose-invert prose-sm max-w-none min-h-[282px] rounded-md border bg-card p-4">
+                        <ReactMarkdown>{adContent}</ReactMarkdown>
+                    </TabsContent>
+                </Tabs>
                 </CardContent>
             </Card>
             </div>
