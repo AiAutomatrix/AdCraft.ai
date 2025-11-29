@@ -61,6 +61,7 @@ export default function EditAdPage() {
   const [ads, setAds] = useLocalStorage<Ad[]>('saved-ads', []);
   const [ad, setAd] = useState<Ad | null>(null);
   const [isNew, setIsNew] = useState(id === 'new');
+  const [initialAdDataLoaded, setInitialAdDataLoaded] = useState(false);
 
   const [aiSuggestions, setAiSuggestions] = useState<AISuggestions | null>(null);
   const [isImproving, setIsImproving] = useState(false);
@@ -72,23 +73,28 @@ export default function EditAdPage() {
     defaultValues: { title: '', content: '', images: [] },
   });
 
-  const adData = useMemo(() => {
+  useEffect(() => {
+    let adData: Ad | null = null;
     if (isNew) {
       const newAdData = sessionStorage.getItem('generatedAd_new');
       if (newAdData) {
-        const parsedData = JSON.parse(newAdData);
-        return {
-          id: 'new',
-          createdAt: new Date().toISOString(),
-          ...parsedData,
-        };
+        try {
+          const parsedData = JSON.parse(newAdData);
+          adData = {
+            id: 'new',
+            createdAt: new Date().toISOString(),
+            ...parsedData,
+          };
+        } catch (e) {
+          console.error("Failed to parse ad data from session storage", e);
+          toast({ title: 'Error loading ad data', variant: 'destructive' });
+          router.replace('/create');
+        }
       }
-      return null;
+    } else {
+      adData = ads.find(a => a.id === id) || null;
     }
-    return ads.find(a => a.id === id) || null;
-  }, [id, ads, isNew]);
 
-  useEffect(() => {
     if (adData) {
       setAd(adData);
       form.reset({ title: adData.title, content: adData.content, images: adData.images || [] });
@@ -96,7 +102,9 @@ export default function EditAdPage() {
       toast({ title: 'Ad not found', variant: 'destructive' });
       router.replace('/saved');
     }
-  }, [adData, form, router, toast, isNew]);
+    setInitialAdDataLoaded(true);
+
+  }, [id, ads, isNew, form, router, toast]);
 
   const onSubmit = (data: AdFormData) => {
     setIsSaving(true);
@@ -200,7 +208,7 @@ export default function EditAdPage() {
     form.setValue('images', updatedImages);
   };
 
-  if (!ad) {
+  if (!initialAdDataLoaded || !ad) {
     return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
   
@@ -384,3 +392,5 @@ export default function EditAdPage() {
     </div>
   );
 }
+
+    
