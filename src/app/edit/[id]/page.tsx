@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -54,7 +54,7 @@ export default function EditAdPage() {
 
   const [ads, setAds] = useLocalStorage<Ad[]>('saved-ads', []);
   const [ad, setAd] = useState<Ad | null>(null);
-  const [isNew, setIsNew] = useState(false);
+  const [isNew, setIsNew] = useState(id === 'new');
 
   const [aiSuggestions, setAiSuggestions] = useState<AISuggestions | null>(null);
   const [isImproving, setIsImproving] = useState(false);
@@ -65,35 +65,31 @@ export default function EditAdPage() {
     defaultValues: { title: '', content: '' },
   });
 
-  useEffect(() => {
-    let currentAd: Ad | null = null;
-    if (id === 'new') {
-        const newAdData = sessionStorage.getItem('generatedAd_new');
-        if (newAdData) {
-            const parsedData = JSON.parse(newAdData);
-            currentAd = {
-                id: 'new',
-                createdAt: new Date().toISOString(),
-                ...parsedData,
-            };
-            setIsNew(true);
-            sessionStorage.removeItem('generatedAd_new');
-        } else {
-            router.replace('/create'); // Redirect if no data
-            return;
-        }
-    } else {
-      currentAd = ads.find(a => a.id === id) || null;
+  const adData = useMemo(() => {
+    if (isNew) {
+      const newAdData = sessionStorage.getItem('generatedAd_new');
+      if (newAdData) {
+        const parsedData = JSON.parse(newAdData);
+        return {
+          id: 'new',
+          createdAt: new Date().toISOString(),
+          ...parsedData,
+        };
+      }
+      return null;
     }
+    return ads.find(a => a.id === id) || null;
+  }, [id, ads, isNew]);
 
-    if (currentAd) {
-      setAd(currentAd);
-      form.reset({ title: currentAd.title, content: currentAd.content });
-    } else if (id !== 'new') {
-        toast({ title: 'Ad not found', variant: 'destructive' });
-        router.replace('/saved');
+  useEffect(() => {
+    if (adData) {
+      setAd(adData);
+      form.reset({ title: adData.title, content: adData.content });
+    } else {
+      toast({ title: 'Ad not found', variant: 'destructive' });
+      router.replace('/saved');
     }
-  }, [id, router, toast, form, ads]);
+  }, [adData, form, router, toast]);
 
   const onSubmit = (data: AdFormData) => {
     setIsSaving(true);
@@ -105,10 +101,13 @@ export default function EditAdPage() {
     };
     
     setAds(isNew ? [...ads, newAd] : ads.map(a => (a.id === id ? newAd : a)));
+    if (isNew) {
+        sessionStorage.removeItem('generatedAd_new');
+    }
     toast({ title: 'Ad Saved!', description: 'Your ad has been successfully saved.' });
     router.push(`/edit/${newAd.id}`);
-    setIsSaving(false);
     setIsNew(false);
+    setIsSaving(false);
   };
 
   const handleDelete = () => {
@@ -274,3 +273,5 @@ export default function EditAdPage() {
     </div>
   );
 }
+
+    
