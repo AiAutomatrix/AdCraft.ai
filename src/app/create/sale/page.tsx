@@ -51,13 +51,18 @@ export default function GenerateForSaleAd() {
         throw new Error(result.error);
       }
       
-      sessionStorage.setItem('generatedAd_new', JSON.stringify({
-        title: `For Sale: ${file.name.split('.')[0]}`,
-        content: result.adText,
-        images: [previewUrl],
-        type: 'sale'
-      }));
-      router.push('/edit/new');
+      if ('adText' in result && 'title' in result) {
+        sessionStorage.setItem('generatedAd_new', JSON.stringify({
+          title: result.title,
+          content: result.adText,
+          images: [previewUrl],
+          type: 'sale'
+        }));
+        router.push('/edit/new');
+      } else {
+        throw new Error('Invalid response from AI generator.');
+      }
+
 
     } catch (error) {
       console.error(error);

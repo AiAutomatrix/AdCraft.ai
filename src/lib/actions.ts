@@ -1,11 +1,11 @@
 'use server';
 
-import { generateAdFromImage, GenerateAdFromImageInput } from '@/ai/flows/generate-ad-from-image';
+import { generateAdFromImage, GenerateAdFromImageInput, GenerateAdFromImageOutput } from '@/ai/flows/generate-ad-from-image';
 import { generateWantedAd } from '@/ai/flows/generate-wanted-ad';
 import { suggestAdImprovements, SuggestAdImprovementsInput } from '@/ai/flows/suggest-ad-improvements';
 
 // Action to generate an ad from an image
-export async function generateAdFromImageAction(input: GenerateAdFromImageInput) {
+export async function generateAdFromImageAction(input: GenerateAdFromImageInput): Promise<GenerateAdFromImageOutput | { error: string }> {
   try {
     const result = await generateAdFromImage(input);
     return result;
