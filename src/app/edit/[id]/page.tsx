@@ -90,6 +90,12 @@ export default function EditAdPage() {
           toast({ title: 'Error loading ad data', variant: 'destructive' });
           router.replace('/create');
         }
+      } else if (!initialAdDataLoaded) {
+        // Only redirect if it's the initial load and there's no data
+        // This prevents redirection on hot-reloads in dev
+        toast({ title: 'No ad data found', description: 'Please create an ad first.', variant: 'destructive' });
+        router.replace('/create');
+        return;
       }
     } else {
       adData = ads.find(a => a.id === id) || null;
@@ -104,7 +110,7 @@ export default function EditAdPage() {
     }
     setInitialAdDataLoaded(true);
 
-  }, [id, ads, isNew, form, router, toast]);
+  }, [id, isNew, form, router, toast, ads, initialAdDataLoaded]);
 
   const onSubmit = (data: AdFormData) => {
     setIsSaving(true);
@@ -133,10 +139,29 @@ export default function EditAdPage() {
     router.push('/saved');
   };
 
-  const handleCopy = () => {
+  const handleCopy = async () => {
     const content = form.getValues('content');
-    navigator.clipboard.writeText(content);
-    toast({ title: 'Copied to Clipboard!' });
+    try {
+      await navigator.clipboard.writeText(content);
+      toast({ title: 'Copied to Clipboard!' });
+    } catch (err) {
+      console.error('Failed to copy text using navigator: ', err);
+      // Fallback for older browsers or insecure contexts
+      const textArea = document.createElement("textarea");
+      textArea.value = content;
+      textArea.style.position = "fixed"; // Avoid scrolling to bottom
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        toast({ title: 'Copied to Clipboard!' });
+      } catch (execErr) {
+        console.error('Fallback copy failed: ', execErr);
+        toast({ title: 'Copy Failed', description: 'Could not copy text to clipboard.', variant: 'destructive' });
+      }
+      document.body.removeChild(textArea);
+    }
   };
   
   const handleImproveWithAI = async () => {
@@ -392,5 +417,3 @@ export default function EditAdPage() {
     </div>
   );
 }
-
-    
