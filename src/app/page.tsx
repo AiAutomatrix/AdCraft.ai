@@ -50,8 +50,8 @@ export default function Home() {
     },
     {
       id: 'offer-service',
-      title: 'Promote Your Services Like a Pro',
-      description: "Describe your professional services and let AI create an engaging advertisement that highlights your skills and attracts clients.",
+      title: 'Offer Your Home Repair Services',
+      description: "From plumbing to painting, describe your professional services and let AI create an engaging ad to attract new clients.",
       image: PlaceHolderImages.find(p => p.id === 'hero-service-offer')
     }
   ].filter(slide => slide.image); // Filter out slides if image is not found

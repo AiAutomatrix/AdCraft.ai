@@ -20,9 +20,9 @@
     },
     {
       "id": "hero-service-offer",
-      "description": "A tow truck assisting a vehicle on the side of a road.",
-      "imageUrl": "https://images.unsplash.com/photo-1615825313939-158852a381a4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHx0b3clMjB0cnVja3xlbnwwfHx8fDE3NjQ1Mzg1ODd8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "tow truck service"
+      "description": "A collection of home repair tools organized on a wall.",
+      "imageUrl": "https://images.unsplash.com/photo-1581578731548-c64695cc6952?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxyZXBhaXIlMjBzZXJ2aWNlfGVufDB8fHx8MTc2NDYxNTMzMXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "home repair"
     },
     {
       "id": "classic-car",
