@@ -19,7 +19,7 @@ import type { Ad } from '@/lib/types';
 import { suggestAdImprovementsAction, generateAdTitleAction } from '@/lib/actions';
 import { useUser } from '@/firebase';
 
-import { ArrowLeft, Copy, Loader2, Save, Sparkles, Trash2, Wand2, Upload, X, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Copy, Loader2, Save, Sparkles, Trash2, Wand2, RefreshCw } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,15 +34,12 @@ import {
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
-import Image from 'next/image';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 
 const adSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters long.'),
   content: z.string().min(10, 'Ad content must be at least 10 characters long.'),
-  images: z.array(z.string()).optional(),
 });
 
 type AdFormData = z.infer<typeof adSchema>;
@@ -57,7 +54,6 @@ export default function EditAdPage() {
   const params = useParams();
   const id = params.id as string;
   const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { getAd, setAd, deleteAd, loading: adsLoading } = useFirestoreAds();
   const { user, isUserLoading } = useUser();
@@ -72,7 +68,7 @@ export default function EditAdPage() {
 
   const form = useForm<AdFormData>({
     resolver: zodResolver(adSchema),
-    defaultValues: { title: '', content: '', images: [] },
+    defaultValues: { title: '', content: '' },
   });
 
   useEffect(() => {
@@ -95,7 +91,7 @@ export default function EditAdPage() {
             ...parsedData,
           };
           setLocalAd(adData);
-          form.reset({ title: adData.title, content: adData.content, images: adData.images || [] });
+          form.reset({ title: adData.title, content: adData.content });
         } catch (e) {
           console.error("Failed to parse ad data from session storage", e);
           toast({ title: 'Error loading ad data', variant: 'destructive' });
@@ -111,7 +107,7 @@ export default function EditAdPage() {
       getAd(id).then(adData => {
         if (adData) {
           setLocalAd(adData);
-          form.reset({ title: adData.title, content: adData.content, images: adData.images || [] });
+          form.reset({ title: adData.title, content: adData.content });
         } else {
           toast({ title: 'Ad not found', variant: 'destructive' });
           router.replace('/saved');
@@ -127,17 +123,15 @@ export default function EditAdPage() {
     const newId = isNew ? uuidv4() : id;
     const adToSave: Ad = {
       id: newId,
-      type: ad?.type || 'sale',
+      type: ad?.type || 'wanted',
       createdAt: ad?.createdAt || null, // Keep original creation date
       title: data.title,
       content: data.content,
-      images: data.images,
     };
     
     try {
       const savedAd = await setAd(adToSave);
-      setLocalAd(savedAd); // Update local state with the final ad data (including new URLs)
-      form.setValue('images', savedAd.images); // Update form state with final URLs
+      setLocalAd(savedAd);
 
       if (isNew) {
           sessionStorage.removeItem('generatedAd_new');
@@ -171,7 +165,6 @@ export default function EditAdPage() {
       toast({ title: 'Copied to Clipboard!' });
     } catch (err) {
       console.error('Failed to copy text using navigator: ', err);
-      // Fallback for older browsers
     }
   };
   
@@ -182,8 +175,7 @@ export default function EditAdPage() {
     const result = await suggestAdImprovementsAction({
         adCopy: currentValues.content,
         vehicleDescription: '',
-        adType: ad?.type === 'wanted' ? 'wanted' : 'sale',
-        images: currentValues.images
+        adType: ad?.type || 'wanted',
     });
 
     if (result.error) {
@@ -199,8 +191,7 @@ export default function EditAdPage() {
     const currentValues = form.getValues();
     const result = await generateAdTitleAction({
         adContent: currentValues.content,
-        adType: ad?.type || 'sale',
-        images: currentValues.images,
+        adType: ad?.type || 'wanted',
     });
 
     if (result.error) {
@@ -219,83 +210,20 @@ export default function EditAdPage() {
     }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files) {
-      const currentImages = form.getValues('images') || [];
-      const newImages: string[] = [];
-      
-      Array.from(files).forEach(file => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          newImages.push(reader.result as string);
-          if (newImages.length === files.length) {
-            form.setValue('images', [...currentImages, ...newImages]);
-          }
-        };
-        reader.readAsDataURL(file);
-      });
-    }
-  };
-  
-  const removeImage = (index: number) => {
-    const currentImages = form.getValues('images') || [];
-    const updatedImages = currentImages.filter((_, i) => i !== index);
-    form.setValue('images', updatedImages);
-  };
-
   if (!initialDataLoaded || !ad) {
     return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
   
-  const images = form.watch('images') || [];
   const adContent = form.watch('content');
-  const adType = ad?.type || 'sale';
+  const adType = ad?.type || 'wanted';
 
   return (
-    <div className="container py-12">
+    <div className="container py-12 max-w-4xl">
         <Button variant="ghost" onClick={() => router.back()} className="mb-4">
             <ArrowLeft className="mr-2 h-4 w-4" /> Back
         </Button>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            <div className="grid md:grid-cols-2 gap-8">
-            <Card>
-                <CardHeader>
-                    <CardTitle className="font-headline">Vehicle Images</CardTitle>
-                    <CardDescription>Add or remove photos of the vehicle.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {images.length > 0 ? (
-                        <Carousel className="w-full max-w-full">
-                            <CarouselContent>
-                                {images.map((src, index) => (
-                                <CarouselItem key={index} className="relative">
-                                    <Image src={src} alt={`Vehicle image ${index + 1}`} width={600} height={400} className="w-full h-auto rounded-md object-contain max-h-[400px]" />
-                                    <Button variant="destructive" size="icon" className="absolute top-2 right-2 h-8 w-8" onClick={() => removeImage(index)}>
-                                        <X className="h-4 w-4" />
-                                    </Button>
-                                </CarouselItem>
-                                ))}
-                            </CarouselContent>
-                             {images.length > 1 && <>
-                                <CarouselPrevious className="left-2" />
-                                <CarouselNext className="right-2" />
-                             </>}
-                        </Carousel>
-                    ) : (
-                        <div className="flex justify-center items-center h-48 bg-muted rounded-md">
-                            <p className="text-muted-foreground">No images uploaded.</p>
-                        </div>
-                    )}
-                    <Button type="button" variant="outline" className="w-full mt-4" onClick={() => fileInputRef.current?.click()}>
-                        <Upload className="mr-2 h-4 w-4" />
-                        Upload More Photos
-                    </Button>
-                    <Input type="file" accept="image/*" multiple className="hidden" ref={fileInputRef} onChange={handleImageUpload} />
-                </CardContent>
-            </Card>
-
             <Card>
                 <CardHeader>
                     <div className="flex justify-between items-start">
@@ -354,7 +282,6 @@ export default function EditAdPage() {
                 </Tabs>
                 </CardContent>
             </Card>
-            </div>
 
           <div className="flex flex-col sm:flex-row gap-2 justify-between">
             <div className="flex gap-2">
@@ -387,7 +314,7 @@ export default function EditAdPage() {
                     <DialogContent className="max-w-2xl">
                          <DialogHeader>
                             <DialogTitle className="font-headline text-2xl flex items-center gap-2"><Sparkles className="h-6 w-6 text-primary" /> AI-Powered Improvements</DialogTitle>
-                            <DialogDescription>Here are suggestions based on your ad content and images to make your ad even better.</DialogDescription>
+                            <DialogDescription>Here are suggestions based on your ad content to make your ad even better.</DialogDescription>
                         </DialogHeader>
                         {isImproving ? (
                              <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>

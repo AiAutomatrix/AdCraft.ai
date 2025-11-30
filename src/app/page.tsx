@@ -12,7 +12,7 @@ export default function Home() {
     {
       icon: <FilePlus2 className="h-8 w-8 text-primary" />,
       title: 'Effortless Ad Creation',
-      description: 'Choose to generate a "For Sale" or a "Wanted" ad with a single click.',
+      description: 'Generate a "Wanted" ad with a single click by describing what you need.',
     },
     {
       icon: <Wand2 className="h-8 w-8 text-primary" />,
@@ -45,7 +45,7 @@ export default function Home() {
                   Craft the Perfect Vehicle Ad with AI
                 </h1>
                 <p className="max-w-[600px] text-text-secondary md:text-xl">
-                  Whether you're selling your car or searching for a new one, AdCraft AI generates compelling ads from a simple photo or description.
+                  Whether you're selling your car or searching for a new one, AdCraft AI generates compelling ads from a simple description.
                 </p>
               </div>
               <div className="flex flex-col gap-3 min-[400px]:flex-row">

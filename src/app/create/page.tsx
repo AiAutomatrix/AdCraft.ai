@@ -1,15 +1,9 @@
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, Car, Search } from 'lucide-react';
+import { ArrowRight, Search } from 'lucide-react';
 import Link from 'next/link';
 
 export default function CreateAdPage() {
   const options = [
-    {
-      href: '/create/sale',
-      title: 'I want to sell a vehicle',
-      description: 'Generate an ad by uploading a photo of your vehicle.',
-      icon: <Car className="h-10 w-10 text-primary mb-4" />,
-    },
     {
       href: '/create/wanted',
       title: 'I am looking for a vehicle',
@@ -25,11 +19,11 @@ export default function CreateAdPage() {
           Create a New Ad
         </h1>
         <p className="mx-auto mt-4 max-w-[700px] text-text-secondary md:text-xl leading-relaxed">
-          What are you looking to do today? Choose an option below to get started.
+          Describe the vehicle you're looking for to get started.
         </p>
       </div>
 
-      <div className="mx-auto mt-12 grid max-w-4xl gap-8 md:grid-cols-2">
+      <div className="mx-auto mt-12 grid max-w-lg gap-8">
         {options.map((option) => (
           <Link href={option.href} key={option.href} className="group block">
             <Card className="h-full transform transition-transform duration-300 group-hover:-translate-y-2 group-hover:shadow-2xl bg-surface-2 border-border/50 hover:border-primary/50">

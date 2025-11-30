@@ -15,7 +15,6 @@ import {
   serverTimestamp,
   getDoc,
 } from 'firebase/firestore';
-import { useFirebaseStorage } from './use-firebase-storage';
 import type { Ad } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -23,7 +22,6 @@ import { FirestorePermissionError } from '@/firebase/errors';
 export function useFirestoreAds() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
-  const { uploadImages, deleteImage } = useFirebaseStorage();
   const [loading, setLoading] = useState(true);
 
   // Firestore collection hook for the logged-in user's ads
@@ -52,13 +50,10 @@ export function useFirestoreAds() {
       const adRef = doc(firestore, `users/${user.uid}/ads`, ad.id);
 
       try {
-        const imageUrls = await uploadImages(ad.images || []);
-
         const adToSave: Partial<Ad> = {
           ...ad,
           userId: user.uid,
           updatedAt: serverTimestamp(),
-          images: imageUrls,
         };
         
         // Only set createdAt if it's a new ad (doesn't have one yet)
@@ -68,7 +63,7 @@ export function useFirestoreAds() {
 
         await setDoc(adRef, adToSave, { merge: true });
 
-        const finalAd = { ...ad, images: imageUrls, userId: user.uid };
+        const finalAd = { ...ad, userId: user.uid };
         setLoading(false);
         return finalAd;
       } catch (e: any) {
@@ -83,7 +78,7 @@ export function useFirestoreAds() {
         throw e;
       }
     },
-    [user, firestore, uploadImages]
+    [user, firestore]
   );
   
   const getAd = useCallback(
@@ -117,16 +112,6 @@ export function useFirestoreAds() {
         console.error('User must be logged in to delete an ad.');
         return;
       }
-
-      const adData = ads?.find(a => a.id === adId);
-
-      if (adData && adData.images && adData.images.length > 0) {
-        for (const imageUrl of adData.images) {
-          if (imageUrl && imageUrl.startsWith('https://firebasestorage.googleapis.com')) {
-            deleteImage(imageUrl).catch(err => console.error(`Failed to delete image ${imageUrl}:`, err));
-          }
-        }
-      }
       
       const adRef = doc(firestore, `users/${user.uid}/ads`, adId);
       try {
@@ -143,7 +128,7 @@ export function useFirestoreAds() {
         throw error;
       }
     },
-    [user, firestore, deleteImage, ads]
+    [user, firestore]
   );
 
   return { ads, getAd, setAd, deleteAd, loading, error: firestoreError };

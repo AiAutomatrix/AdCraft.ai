@@ -14,9 +14,6 @@ import {z} from 'genkit';
 const GenerateAdTitleInputSchema = z.object({
     adContent: z.string().describe('The full content of the vehicle advertisement.'),
     adType: z.enum(['sell', 'want']).describe('The type of ad (sell or want).'),
-    images: z.array(z.string()).optional().describe(
-      "A list of data URIs of vehicle images. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
-    ),
 });
 
 export type GenerateAdTitleInput = z.infer<typeof GenerateAdTitleInputSchema>;
@@ -44,14 +41,6 @@ const generateTitlePrompt = ai.definePrompt({
 
     Ad Type: {{{adType}}}
     Ad Content: {{{adContent}}}
-
-    {{#if images}}
-    The user has also provided images, analyze them for more context.
-    Images:
-    {{#each images}}
-    - {{media url=this}}
-    {{/each}}
-    {{/if}}
     
     Generate only the title text.`,
 });

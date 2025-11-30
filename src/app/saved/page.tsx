@@ -21,7 +21,6 @@ import {
     AlertDialogTrigger,
   } from "@/components/ui/alert-dialog"
 import { useEffect } from 'react';
-import Image from 'next/image';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { motion } from 'framer-motion';
 import { useUser } from '@/firebase';
@@ -152,11 +151,7 @@ export default function SavedAdsPage() {
           >
             <Card className="flex flex-col overflow-hidden h-full bg-surface-2 border-border/50 transition-all duration-300 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1">
               <div className="aspect-video bg-surface-1 flex items-center justify-center relative">
-                  {ad.images && ad.images.length > 0 ? (
-                      <Image src={ad.images[0]} alt={ad.title} layout="fill" className="object-cover"/>
-                  ) : (
-                      ad.type === 'sale' ? <Car className="w-16 h-16 text-text-secondary opacity-50" /> : <Search className="w-16 h-16 text-text-secondary opacity-50" />
-                  )}
+                  {ad.type === 'sale' ? <Car className="w-16 h-16 text-text-secondary opacity-50" /> : <Search className="w-16 h-16 text-text-secondary opacity-50" />}
               </div>
               <CardHeader>
                 <div className="flex justify-between items-start gap-4">

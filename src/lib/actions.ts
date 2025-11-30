@@ -5,17 +5,6 @@ import { generateWantedAd } from '@/ai/flows/generate-wanted-ad';
 import { suggestAdImprovements, SuggestAdImprovementsInput } from '@/ai/flows/suggest-ad-improvements';
 import { generateAdTitle, GenerateAdTitleInput } from '@/ai/flows/generate-ad-title';
 
-// Action to generate an ad from an image
-export async function generateAdFromImageAction(input: GenerateAdFromImageInput): Promise<GenerateAdFromImageOutput | { error: string }> {
-  try {
-    const result = await generateAdFromImage(input);
-    return result;
-  } catch (error) {
-    console.error('Error in generateAdFromImageAction:', error);
-    return { error: 'Failed to generate ad from image. The AI model might be unavailable.' };
-  }
-}
-
 // Action to generate a wanted ad from text
 export async function generateWantedAdAction(description: string) {
   try {
@@ -43,8 +32,7 @@ export async function generateAdTitleAction(input: GenerateAdTitleInput) {
     try {
       const result = await generateAdTitle(input);
       return { title: result };
-    } catch (error) {
-      console.error('Error in generateAdTitleAction:', error);
+    } catch (error)      console.error('Error in generateAdTitleAction:', error);
       return { error: 'Failed to generate ad title. The AI model might be unavailable.' };
     }
 }
