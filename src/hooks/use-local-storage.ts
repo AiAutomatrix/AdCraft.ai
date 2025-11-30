@@ -63,11 +63,10 @@ export function useAdStorage() {
         const batch = writeBatch(firestore);
         for (const ad of localAds) {
           const adRef = doc(firestore, `users/${user.uid}/ads`, ad.id);
-          // When migrating, ensure userId is set correctly.
           const imageUrls = await uploadImages(ad.images || []);
           const adToSave: Omit<Ad, 'createdAt'> & { createdAt: any; updatedAt: any; userId: string; } = {
             ...ad,
-            userId: user.uid, // This was the missing piece
+            userId: user.uid,
             images: imageUrls,
             createdAt: ad.createdAt,
             updatedAt: serverTimestamp(),
