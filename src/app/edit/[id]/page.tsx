@@ -150,21 +150,16 @@ export default function EditAdPage() {
         userId: user.uid,
       };
       
-      const savedAd = await setAd(adToSave);
+      await setAd(adToSave);
       
       toast({ title: 'Ad Saved!', description: 'Your ad has been successfully saved.' });
+      sessionStorage.removeItem('generatedAd_new');
       
-      if (isNew) {
-          sessionStorage.removeItem('generatedAd_new');
-          setIsNew(false);
-          // Replace URL without re-running loader logic
-          router.replace(`/edit/${adId}`, { scroll: false }); 
-      }
-      setLocalAd(savedAd); // Update local state with the returned ad
+      router.push('/saved');
+
     } catch(e) {
       console.error(e);
       toast({ title: 'Save Failed', description: 'Could not save your ad. Please try again.', variant: 'destructive' });
-    } finally {
       setIsSaving(false);
     }
   };

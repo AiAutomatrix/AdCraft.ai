@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Menu, Sparkles } from 'lucide-react';
@@ -17,6 +18,11 @@ const navLinks = [
 
 export function Header() {
   const pathname = usePathname();
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+
+  const handleLinkClick = () => {
+    setIsSheetOpen(false);
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -54,7 +60,7 @@ export function Header() {
         </div>
 
         {/* Mobile Menu */}
-        <Sheet>
+        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
           <SheetTrigger asChild>
             <Button
               variant="ghost"
@@ -68,7 +74,7 @@ export function Header() {
           <SheetContent side="left" className="pr-0">
             <SheetHeader className="text-left">
               <SheetTitle>
-                <Link href="/" className="flex items-center space-x-2">
+                <Link href="/" onClick={handleLinkClick} className="flex items-center space-x-2">
                     <Logo className="h-6 w-6 text-primary" />
                     <span className="font-bold font-headline">
                     AdCraft AI
@@ -85,6 +91,7 @@ export function Header() {
                     <Link
                         key={`mobile-${link.href}`}
                         href={link.href}
+                        onClick={handleLinkClick}
                         className={cn(
                             'text-lg transition-colors hover:text-foreground/80',
                             pathname === link.href
