@@ -1,5 +1,5 @@
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, Car, Search } from 'lucide-react';
+import { ArrowRight, Car, Search, Image as ImageIcon } from 'lucide-react';
 import Link from 'next/link';
 
 export default function CreateAdPage() {
@@ -7,8 +7,8 @@ export default function CreateAdPage() {
     {
       href: '/create/sale',
       title: 'I want to sell a vehicle',
-      description: 'Generate a "For Sale" ad by describing your vehicle.',
-      icon: <Car className="h-10 w-10 text-primary mb-4" />,
+      description: 'Generate a "For Sale" ad by uploading a photo of your vehicle.',
+      icon: <ImageIcon className="h-10 w-10 text-primary mb-4" />,
     },
     {
       href: '/create/wanted',

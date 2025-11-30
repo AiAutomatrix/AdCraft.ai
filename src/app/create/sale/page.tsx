@@ -1,26 +1,37 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { generateSaleAdFromTextAction } from '@/lib/actions';
-import { Loader2, Wand2 } from 'lucide-react';
-import { Label } from '@/components/ui/label';
+import { generateAdFromImageAction } from '@/lib/actions';
+import { Loader2, Wand2, Upload, X } from 'lucide-react';
+import Image from 'next/image';
 
 export default function GenerateSaleAdPage() {
-  const [description, setDescription] = useState('');
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleGenerate = async () => {
-    if (!description.trim()) {
+    if (!imagePreview) {
       toast({
-        title: 'Description is empty',
-        description: 'Please describe the vehicle you are selling.',
+        title: 'No image selected',
+        description: 'Please upload an image of your vehicle.',
         variant: 'destructive',
       });
       return;
@@ -28,7 +39,10 @@ export default function GenerateSaleAdPage() {
 
     setIsGenerating(true);
     try {
-      const result = await generateSaleAdFromTextAction(description);
+      const result = await generateAdFromImageAction({
+        photoDataUri: imagePreview,
+        adType: 'sell',
+      });
 
       if (result.error) {
         throw new Error(result.error);
@@ -37,7 +51,8 @@ export default function GenerateSaleAdPage() {
       sessionStorage.setItem('generatedAd_new', JSON.stringify({
         title: result.title,
         content: result.adText,
-        type: 'sale'
+        type: 'sale',
+        images: [imagePreview], // Pass the image data URI
       }));
       router.push('/edit/new');
 
@@ -52,30 +67,63 @@ export default function GenerateSaleAdPage() {
       setIsGenerating(false);
     }
   };
+  
+  const clearImage = () => {
+    setImagePreview(null);
+    if(fileInputRef.current) {
+        fileInputRef.current.value = '';
+    }
+  }
 
   return (
     <div className="container py-12">
       <Card className="max-w-2xl mx-auto">
         <CardHeader>
-          <CardTitle className="font-headline text-3xl">Generate a 'For Sale' Ad</CardTitle>
-          <CardDescription>Describe the vehicle you're selling, and our AI will write a professional, compelling ad for you.</CardDescription>
+          <CardTitle className="font-headline text-3xl">Generate a 'For Sale' Ad from a Photo</CardTitle>
+          <CardDescription>Upload a picture of your vehicle, and our AI will identify it and write a professional ad for you.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="description">Your Vehicle's Description</Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="e.g., 'Selling my 2020 Tesla Model 3 Long Range. It has 25,000 miles, white exterior, black interior. Full self-driving package included. Excellent condition, no accidents. New tires recently installed.'"
-              className="min-h-[150px] text-base"
+            <input
+              type="file"
+              accept="image/*"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              className="hidden"
               disabled={isGenerating}
             />
-             <p className="text-sm text-muted-foreground">
-              Be as specific as you like. Include make, model, year, mileage, condition, and any special features.
-            </p>
+            {imagePreview ? (
+              <div className="relative group">
+                <Image
+                  src={imagePreview}
+                  alt="Vehicle preview"
+                  width={600}
+                  height={400}
+                  className="rounded-lg object-cover w-full aspect-video"
+                />
+                <Button 
+                    variant="destructive" 
+                    size="icon" 
+                    className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={clearImage}
+                    disabled={isGenerating}
+                >
+                    <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isGenerating}
+                className="w-full h-64 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center text-muted-foreground hover:bg-muted/50 hover:border-primary transition-colors"
+              >
+                <Upload className="h-10 w-10 mb-2" />
+                <span>Click to upload a photo</span>
+                <span className="text-sm">PNG, JPG, or WEBP</span>
+              </button>
+            )}
           </div>
-          <Button onClick={handleGenerate} disabled={!description || isGenerating} className="w-full font-semibold" size="lg">
+          <Button onClick={handleGenerate} disabled={!imagePreview || isGenerating} className="w-full font-semibold" size="lg">
             {isGenerating ? (
               <Loader2 className="mr-2 h-5 w-5 animate-spin" />
             ) : (

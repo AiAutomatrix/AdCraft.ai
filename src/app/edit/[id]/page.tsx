@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
 import ReactMarkdown from 'react-markdown';
+import Image from 'next/image';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -124,6 +125,7 @@ export default function EditAdPage() {
     const adToSave: Ad = {
       id: newId,
       type: ad?.type || 'wanted',
+      images: ad?.images || [],
       createdAt: ad?.createdAt || null, // Keep original creation date
       title: data.title,
       content: data.content,
@@ -216,72 +218,95 @@ export default function EditAdPage() {
   
   const adContent = form.watch('content');
   const adType = ad?.type || 'wanted';
+  const primaryImage = ad?.images?.[0];
 
   return (
-    <div className="container py-12 max-w-4xl">
+    <div className="container py-12 max-w-6xl">
         <Button variant="ghost" onClick={() => router.back()} className="mb-4">
             <ArrowLeft className="mr-2 h-4 w-4" /> Back
         </Button>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            <Card>
-                <CardHeader>
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <CardTitle className="font-headline text-3xl">Ad Editor</CardTitle>
-                            <CardDescription>
-                                {isNew ? "Here's your new AI-generated ad. Refine it and save it." : "Edit your saved ad."}
-                            </CardDescription>
+            <div className="grid md:grid-cols-2 gap-8">
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="font-headline text-2xl">Vehicle Image</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {primaryImage ? (
+                             <Image
+                                src={primaryImage}
+                                alt={ad.title}
+                                width={600}
+                                height={400}
+                                className="rounded-lg object-cover w-full aspect-video"
+                            />
+                        ) : (
+                            <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
+                                <p className="text-muted-foreground">No image provided</p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <CardTitle className="font-headline text-3xl">Ad Editor</CardTitle>
+                                <CardDescription>
+                                    {isNew ? "Here's your new AI-generated ad. Refine it and save it." : "Edit your saved ad."}
+                                </CardDescription>
+                            </div>
+                            <Badge variant={adType === 'sale' ? 'default' : 'secondary'} className="capitalize text-sm">{adType}</Badge>
                         </div>
-                        <Badge variant={adType === 'sale' ? 'default' : 'secondary'} className="capitalize text-sm">{adType}</Badge>
-                    </div>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                <FormField
-                    control={form.control}
-                    name="title"
-                    render={({ field }) => (
-                    <FormItem>
-                        <div className="flex justify-between items-center">
-                            <FormLabel className="text-lg">Ad Title</FormLabel>
-                            <Button type="button" size="sm" variant="ghost" onClick={handleGenerateTitle} disabled={isGeneratingTitle}>
-                                {isGeneratingTitle ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                                Generate
-                            </Button>
-                        </div>
-                        <FormControl>
-                        <Input placeholder="e.g., For Sale: 2020 Ford Mustang" {...field} className="text-base" />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-                <Tabs defaultValue="edit" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="edit">Edit</TabsTrigger>
-                        <TabsTrigger value="preview">Preview</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="edit">
-                        <FormField
-                            control={form.control}
-                            name="content"
-                            render={({ field }) => (
-                            <FormItem>
-                                <FormLabel className="sr-only">Ad Content</FormLabel>
-                                <FormControl>
-                                <Textarea placeholder="Your ad copy will appear here..." {...field} className="min-h-[250px] text-base" />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                            )}
-                        />
-                    </TabsContent>
-                    <TabsContent value="preview" className="prose dark:prose-invert prose-sm max-w-none min-h-[282px] rounded-md border bg-card p-4">
-                        <ReactMarkdown>{adContent}</ReactMarkdown>
-                    </TabsContent>
-                </Tabs>
-                </CardContent>
-            </Card>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                    <FormField
+                        control={form.control}
+                        name="title"
+                        render={({ field }) => (
+                        <FormItem>
+                            <div className="flex justify-between items-center">
+                                <FormLabel className="text-lg">Ad Title</FormLabel>
+                                <Button type="button" size="sm" variant="ghost" onClick={handleGenerateTitle} disabled={isGeneratingTitle}>
+                                    {isGeneratingTitle ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                                    Generate
+                                </Button>
+                            </div>
+                            <FormControl>
+                            <Input placeholder="e.g., For Sale: 2020 Ford Mustang" {...field} className="text-base" />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <Tabs defaultValue="edit" className="w-full">
+                        <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="edit">Edit</TabsTrigger>
+                            <TabsTrigger value="preview">Preview</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="edit">
+                            <FormField
+                                control={form.control}
+                                name="content"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="sr-only">Ad Content</FormLabel>
+                                    <FormControl>
+                                    <Textarea placeholder="Your ad copy will appear here..." {...field} className="min-h-[250px] text-base" />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                        </TabsContent>
+                        <TabsContent value="preview" className="prose dark:prose-invert prose-sm max-w-none min-h-[282px] rounded-md border bg-card p-4">
+                            <ReactMarkdown>{adContent}</ReactMarkdown>
+                        </TabsContent>
+                    </Tabs>
+                    </CardContent>
+                </Card>
+            </div>
 
           <div className="flex flex-col sm:flex-row gap-2 justify-between">
             <div className="flex gap-2">
@@ -295,7 +320,7 @@ export default function EditAdPage() {
                         <AlertDialogContent>
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                <AlertDialogDescription>This action cannot be undone. This will permanently delete this ad.</AlertDialogDescription>
+                                <AlertDialogDescription>This action cannot be undone. This will permanently delete this ad and its images.</AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>

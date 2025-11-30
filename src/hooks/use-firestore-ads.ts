@@ -18,10 +18,12 @@ import {
 import type { Ad } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { useFirebaseStorage } from './use-firebase-storage';
 
 export function useFirestoreAds() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
+  const { uploadImages, deleteImage } = useFirebaseStorage();
   const [loading, setLoading] = useState(true);
 
   // Firestore collection hook for the logged-in user's ads
@@ -46,12 +48,15 @@ export function useFirestoreAds() {
         throw new Error('User must be logged in to save an ad.');
       }
       setLoading(true);
-
-      const adRef = doc(firestore, `users/${user.uid}/ads`, ad.id);
-
+      
       try {
+        // Handle image upload before saving the document
+        const uploadedImageUrls = await uploadImages(ad.images || []);
+
+        const adRef = doc(firestore, `users/${user.uid}/ads`, ad.id);
         const adToSave: Partial<Ad> = {
           ...ad,
+          images: uploadedImageUrls, // Use the URLs from storage
           userId: user.uid,
           updatedAt: serverTimestamp(),
         };
@@ -63,22 +68,21 @@ export function useFirestoreAds() {
 
         await setDoc(adRef, adToSave, { merge: true });
 
-        const finalAd = { ...ad, userId: user.uid };
+        const finalAd = { ...ad, images: uploadedImageUrls, userId: user.uid };
         setLoading(false);
         return finalAd;
       } catch (e: any) {
         setLoading(false);
         const permissionError = new FirestorePermissionError({
-          path: adRef.path,
+          path: `users/${user.uid}/ads/${ad.id}`,
           operation: 'write',
           requestResourceData: ad,
         });
         errorEmitter.emit('permission-error', permissionError);
-        // Re-throw the original error to be caught by a higher-level boundary
-        throw e;
+        throw e; // Re-throw for component-level error handling if needed
       }
     },
-    [user, firestore]
+    [user, firestore, uploadImages]
   );
   
   const getAd = useCallback(
@@ -109,10 +113,24 @@ export function useFirestoreAds() {
   const deleteAd = useCallback(
     async (adId: string) => {
       if (!user || !firestore) {
-        console.error('User must be logged in to delete an ad.');
-        return;
+        throw new Error('User must be logged in to delete an ad.');
       }
       
+      const adToDelete = ads?.find(ad => ad.id === adId);
+
+      // First, delete images from Firebase Storage if they exist
+      if (adToDelete?.images) {
+        for (const imageUrl of adToDelete.images) {
+          try {
+            await deleteImage(imageUrl);
+          } catch (error) {
+            // Log error but don't block deletion of Firestore doc
+            console.error(`Failed to delete image ${imageUrl}:`, error);
+          }
+        }
+      }
+
+      // Then, delete the Firestore document
       const adRef = doc(firestore, `users/${user.uid}/ads`, adId);
       try {
         await deleteDoc(adRef);
@@ -124,11 +142,10 @@ export function useFirestoreAds() {
             operation: 'delete',
           })
         )
-        // Re-throw so the UI can be notified if needed
         throw error;
       }
     },
-    [user, firestore]
+    [user, firestore, deleteImage, ads]
   );
 
   return { ads, getAd, setAd, deleteAd, loading, error: firestoreError };

@@ -4,6 +4,7 @@ import { Ad } from '@/lib/types';
 import { useFirestoreAds } from '@/hooks/use-firestore-ads';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowRight, Car, Copy, Edit, FilePlus, Loader2, MoreVertical, Search, Share2, Trash2 } from 'lucide-react';
@@ -151,7 +152,18 @@ export default function SavedAdsPage() {
           >
             <Card className="flex flex-col overflow-hidden h-full bg-surface-2 border-border/50 transition-all duration-300 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1">
               <div className="aspect-video bg-surface-1 flex items-center justify-center relative">
-                  {ad.type === 'sale' ? <Car className="w-16 h-16 text-text-secondary opacity-50" /> : <Search className="w-16 h-16 text-text-secondary opacity-50" />}
+                  {ad.images && ad.images.length > 0 ? (
+                      <Image 
+                        src={ad.images[0]} 
+                        alt={ad.title} 
+                        fill 
+                        className="object-cover"
+                      />
+                  ) : ad.type === 'sale' ? (
+                      <Car className="w-16 h-16 text-text-secondary opacity-50" />
+                  ) : (
+                      <Search className="w-16 h-16 text-text-secondary opacity-50" />
+                  )}
               </div>
               <CardHeader>
                 <div className="flex justify-between items-start gap-4">
@@ -195,7 +207,7 @@ export default function SavedAdsPage() {
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete this ad.
+                                This action cannot be undone. This will permanently delete this ad and its associated images.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
