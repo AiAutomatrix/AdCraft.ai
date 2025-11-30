@@ -1,7 +1,7 @@
 'use client';
 
 import { Ad } from '@/lib/types';
-import { useAdStorage } from '@/hooks/use-local-storage';
+import { useFirestoreAds } from '@/hooks/use-firestore-ads';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,15 +27,14 @@ import { motion } from 'framer-motion';
 import { useUser } from '@/firebase';
 
 export default function SavedAdsPage() {
-  const { ads, deleteAd, loading } = useAdStorage();
+  const { ads, deleteAd, loading } = useFirestoreAds();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   const { toast } = useToast();
   
   useEffect(() => {
     if (!user && !isUserLoading) {
-      // Don't redirect immediately if we are just loading from local storage
-      // Only redirect if a user action requires authentication
+      router.push('/login');
     }
   }, [user, isUserLoading, router]);
 
@@ -45,8 +44,8 @@ export default function SavedAdsPage() {
     return dateB.getTime() - dateA.getTime();
   });
 
-  const handleDelete = (adOrId: Ad | string) => {
-    deleteAd(adOrId);
+  const handleDelete = (adId: string) => {
+    deleteAd(adId);
     toast({ title: "Ad Deleted", description: "The ad has been successfully removed.", variant: "destructive" });
   };
 
@@ -56,16 +55,7 @@ export default function SavedAdsPage() {
   };
 
   const handleEdit = (adId: string) => {
-    if (!user) {
-      toast({
-        title: 'Authentication Required',
-        description: 'Please log in to edit your saved ads.',
-        variant: 'destructive',
-      });
-      router.push('/login');
-    } else {
-      router.push(`/edit/${adId}`);
-    }
+    router.push(`/edit/${adId}`);
   };
 
 
@@ -91,6 +81,22 @@ export default function SavedAdsPage() {
         <div className="container max-w-screen-xl mx-auto px-4 md:px-8 py-12">
             <div className="flex justify-center items-center h-full">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        </div>
+    );
+  }
+
+  if (!user) {
+    return (
+        <div className="container max-w-screen-xl mx-auto px-4 md:px-8 py-12">
+            <div className="flex flex-col justify-center items-center h-full text-center">
+                <h1 className="font-headline text-3xl font-bold">Authentication Required</h1>
+                <p className="mt-2 text-text-secondary">
+                    Please log in to view and manage your saved ads.
+                </p>
+                <Button asChild className="mt-6 font-semibold">
+                    <Link href="/login">Login <ArrowRight className="ml-2 h-5 w-5" /></Link>
+                </Button>
             </div>
         </div>
     );
@@ -127,7 +133,7 @@ export default function SavedAdsPage() {
         <div className="flex justify-between items-center mb-8 md:mb-12">
             <div>
                 <h1 className="font-headline text-4xl font-bold tracking-tight sm:text-5xl">My Saved Ads</h1>
-                <p className="mt-2 text-text-secondary">{user ? "Here are all the ads you've crafted." : "Ads are saved locally. Log in to sync across devices."}</p>
+                <p className="mt-2 text-text-secondary">Here are all the ads you've crafted.</p>
             </div>
             <Button asChild className="font-semibold hidden sm:flex">
                 <Link href="/create">

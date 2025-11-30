@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { useAdStorage } from '@/hooks/use-local-storage';
+import { useFirestoreAds } from '@/hooks/use-firestore-ads';
 import { useToast } from '@/hooks/use-toast';
 import type { Ad } from '@/lib/types';
 import { suggestAdImprovementsAction, generateAdTitleAction } from '@/lib/actions';
@@ -60,7 +60,7 @@ export default function EditAdPage() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { ads, setAd, deleteAd, loading: adsLoading } = useAdStorage();
+  const { getAd, setAd, deleteAd, loading: adsLoading } = useFirestoreAds();
   const { user, isUserLoading } = useUser();
   const { deleteImage } = useFirebaseStorage();
   const [ad, setLocalAd] = useState<Ad | null>(null);
@@ -79,19 +79,25 @@ export default function EditAdPage() {
 
   useEffect(() => {
     if (adsLoading || isUserLoading) return;
-
-    let adData: Ad | null = null;
+    
+    if (!user) {
+        toast({ title: 'Authentication Required', description: 'You must be logged in to edit ads.', variant: 'destructive' });
+        router.replace('/login');
+        return;
+    }
 
     if (isNew) {
       const newAdData = sessionStorage.getItem('generatedAd_new');
       if (newAdData) {
         try {
           const parsedData = JSON.parse(newAdData);
-          adData = {
+          const adData: Ad = {
             id: 'new', // Temporary ID
             createdAt: new Date().toISOString(),
             ...parsedData,
           };
+          setLocalAd(adData);
+          form.reset({ title: adData.title, content: adData.content, images: adData.images || [] });
         } catch (e) {
           console.error("Failed to parse ad data from session storage", e);
           toast({ title: 'Error loading ad data', variant: 'destructive' });
@@ -102,22 +108,21 @@ export default function EditAdPage() {
         router.replace('/create');
         return;
       }
+      setInitialDataLoaded(true);
     } else {
-      if (ads) {
-        adData = ads.find(a => a.id === id) || null;
-      }
+      getAd(id).then(adData => {
+        if (adData) {
+          setLocalAd(adData);
+          form.reset({ title: adData.title, content: adData.content, images: adData.images || [] });
+        } else {
+          toast({ title: 'Ad not found', variant: 'destructive' });
+          router.replace('/saved');
+        }
+        setInitialDataLoaded(true);
+      })
     }
 
-    if (adData) {
-      setLocalAd(adData);
-      form.reset({ title: adData.title, content: adData.content, images: adData.images || [] });
-    } else if (!isNew && !adsLoading) {
-      toast({ title: 'Ad not found', variant: 'destructive' });
-      router.replace('/saved');
-    }
-    setInitialDataLoaded(true);
-
-  }, [id, isNew, form, router, toast, ads, adsLoading, isUserLoading, initialDataLoaded]);
+  }, [id, isNew, form, router, toast, adsLoading, isUserLoading, initialDataLoaded, getAd, user]);
 
   const onSubmit = async (data: AdFormData) => {
     setIsSaving(true);
@@ -154,8 +159,8 @@ export default function EditAdPage() {
   };
 
   const handleDelete = async () => {
-    if (ad) {
-      await deleteAd(ad);
+    if (ad && !isNew) {
+      await deleteAd(ad.id);
       toast({ title: 'Ad Deleted', variant: 'destructive' });
       router.push('/saved');
     }
