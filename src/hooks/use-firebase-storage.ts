@@ -12,7 +12,8 @@ import { useFirebaseApp, useUser } from '@/firebase';
 
 export function useFirebaseStorage() {
   const firebaseApp = useFirebaseApp();
-  const storage = useMemo(() => getStorage(firebaseApp), [firebaseApp]);
+  // Explicitly use the correct storage bucket URL
+  const storage = useMemo(() => getStorage(firebaseApp, 'gs://studio-494843406-f3e2e.firebasestorage.app'), [firebaseApp]);
   const { user } = useUser();
 
   /**
