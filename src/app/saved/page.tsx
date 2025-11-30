@@ -20,7 +20,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
   } from "@/components/ui/alert-dialog"
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import Image from 'next/image';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { motion } from 'framer-motion';
@@ -28,15 +28,15 @@ import { useUser } from '@/firebase';
 
 export default function SavedAdsPage() {
   const { ads, deleteAd, loading } = useAdStorage();
-  const { user, loading: userLoading } = useUser();
+  const { user, isUserLoading } = useUser();
   const router = useRouter();
   const { toast } = useToast();
   
   useEffect(() => {
-    if (!user && !userLoading) {
+    if (!user && !isUserLoading) {
       router.push('/login');
     }
-  }, [user, userLoading, router]);
+  }, [user, isUserLoading, router]);
 
   const sortedAds = [...(ads || [])].sort((a, b) => {
     const dateA = a.createdAt ? (typeof a.createdAt === 'string' ? new Date(a.createdAt) : a.createdAt.toDate()) : new Date(0);
@@ -71,7 +71,7 @@ export default function SavedAdsPage() {
     }
   };
 
-  if (loading || userLoading) {
+  if (loading || isUserLoading) {
     return (
         <div className="container max-w-screen-xl mx-auto px-4 md:px-8 py-12">
             <div className="flex justify-center items-center h-full">

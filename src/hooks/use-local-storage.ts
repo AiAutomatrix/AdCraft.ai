@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   useFirestore,
   useUser,
   useCollection,
-  useDoc,
+  useMemoFirebase,
 } from '@/firebase';
 import {
   doc,
@@ -16,11 +16,11 @@ import {
   serverTimestamp
 } from 'firebase/firestore';
 import type { Ad } from '@/lib/types';
-import { useMemo } from 'react';
+import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 // A custom hook to manage ads, either in local storage or Firestore
 export function useAdStorage() {
-  const { user, loading: userLoading } = useUser();
+  const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
 
   // Local state for ads
@@ -28,20 +28,20 @@ export function useAdStorage() {
   const [isMigrating, setIsMigrating] = useState(false);
 
   // Firestore collection hook for logged-in users
-  const userAdsCollection = useMemo(() => {
+  const userAdsCollection = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return collection(firestore, `users/${user.uid}/ads`);
   }, [firestore, user]);
 
   const {
     data: firestoreAds,
-    loading: firestoreLoading,
+    isLoading: firestoreLoading,
     error: firestoreError,
   } = useCollection(userAdsCollection);
 
   // Load from local storage on initial mount
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && !user) {
       const saved = localStorage.getItem('saved-ads');
       if (saved) {
         try {
@@ -51,7 +51,7 @@ export function useAdStorage() {
         }
       }
     }
-  }, []);
+  }, [user]);
 
   // Migrate local ads to Firestore when user logs in
   useEffect(() => {
@@ -76,13 +76,13 @@ export function useAdStorage() {
     return user ? firestoreAds : localAds;
   }, [user, firestoreAds, localAds]);
   
-  const loading = userLoading || firestoreLoading || isMigrating;
+  const loading = isUserLoading || firestoreLoading || isMigrating;
 
   const setAd = useCallback(
-    async (ad: Ad) => {
+    (ad: Ad) => {
       if (user && firestore) {
         const adRef = doc(firestore, `users/${user.uid}/ads`, ad.id);
-        await setDoc(adRef, ad, { merge: true });
+        setDocumentNonBlocking(adRef, ad, { merge: true });
       } else {
         setLocalAds((prevAds) => {
           const existing = prevAds.find((a) => a.id === ad.id);
@@ -115,10 +115,10 @@ export function useAdStorage() {
   
 
   const deleteAd = useCallback(
-    async (id: string) => {
+    (id: string) => {
       if (user && firestore) {
         const adRef = doc(firestore, `users/${user.uid}/ads`, id);
-        await deleteDoc(adRef);
+        deleteDocumentNonBlocking(adRef);
       } else {
         setLocalAds((prevAds) => {
           const newAds = prevAds.filter((ad) => ad.id !== id);

@@ -60,8 +60,8 @@ export default function EditAdPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { ads, setAd, deleteAd, loading: adsLoading } = useAdStorage();
-  const { user, loading: userLoading } = useUser();
-  const [ad, setAd] = useState<Ad | null>(null);
+  const { user, isUserLoading } = useUser();
+  const [ad, setLocalAd] = useState<Ad | null>(null);
   const [isNew, setIsNew] = useState(id === 'new');
   
   const [aiSuggestions, setAiSuggestions] = useState<AISuggestions | null>(null);
@@ -76,7 +76,7 @@ export default function EditAdPage() {
   });
 
   useEffect(() => {
-    if (adsLoading || userLoading) return;
+    if (adsLoading || isUserLoading) return;
 
     let adData: Ad | null = null;
 
@@ -107,7 +107,7 @@ export default function EditAdPage() {
     }
 
     if (adData) {
-      setAd(adData);
+      setLocalAd(adData);
       form.reset({ title: adData.title, content: adData.content, images: adData.images || [] });
     } else if (!isNew && !adsLoading) {
       toast({ title: 'Ad not found', variant: 'destructive' });
@@ -115,7 +115,7 @@ export default function EditAdPage() {
     }
     setInitialDataLoaded(true);
 
-  }, [id, isNew, form, router, toast, ads, adsLoading, userLoading, initialDataLoaded]);
+  }, [id, isNew, form, router, toast, ads, adsLoading, isUserLoading, initialDataLoaded]);
 
   const onSubmit = async (data: AdFormData) => {
     setIsSaving(true);
@@ -139,6 +139,7 @@ export default function EditAdPage() {
     if (isNew) {
       router.replace(`/edit/${newId}`, { scroll: false });
       setIsNew(false);
+      setLocalAd(adToSave);
     }
     setIsSaving(false);
   };

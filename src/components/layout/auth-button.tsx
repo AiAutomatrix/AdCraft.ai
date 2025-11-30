@@ -1,6 +1,6 @@
 'use client';
 
-import { useUser } from '@/firebase';
+import { useUser, useAuth } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
@@ -14,22 +14,21 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { signOut, type Auth } from 'firebase/auth';
 import { LogOut, Loader2 } from 'lucide-react';
-import { useAuth } from '@/firebase';
 
 function handleSignOut(auth: Auth) {
   signOut(auth);
 }
 
 export function AuthButton() {
-  const { user, loading, error } = useUser();
+  const { user, isUserLoading, userError } = useUser();
   const auth = useAuth();
 
-  if (loading) {
+  if (isUserLoading) {
     return <Loader2 className="h-6 w-6 animate-spin" />;
   }
 
-  if (error) {
-    console.error('Auth error:', error);
+  if (userError) {
+    console.error('Auth error:', userError);
     return (
       <Link href="/login">
         <Button variant="secondary">Login</Button>

@@ -8,16 +8,16 @@ import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 
 function LoginPageContent() {
-  const { user, loading } = useUser();
+  const { user, isUserLoading } = useUser();
   const router = useRouter();
 
   useEffect(() => {
-    if (user && !loading) {
+    if (user && !isUserLoading) {
       router.push('/saved');
     }
-  }, [user, loading, router]);
+  }, [user, isUserLoading, router]);
 
-  if (loading || user) {
+  if (isUserLoading || user) {
     return (
       <div className="flex justify-center items-center h-full">
         <Loader2 className="h-8 w-8 animate-spin" />
