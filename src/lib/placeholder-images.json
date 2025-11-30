@@ -21,7 +21,7 @@
     {
       "id": "hero-service-offer",
       "description": "A professional painter neatly painting a wall with a roller.",
-      "imageUrl": "https://images.unsplash.com/photo-1583522479261-a0c642a42a4e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1964&q=80",
+      "imageUrl": "https://images.unsplash.com/photo-1607590843469-7d4b4d4a4e37?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxjYXIlMjB3YXNoJTIwc2VydmljZXxlbnwwfHx8fDE3NjQ1MzQyNjJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "car wash service"
     },
     {
@@ -39,13 +39,13 @@
     {
       "id": "upload-placeholder",
       "description": "A placeholder graphic showing a cloud upload icon and a car outline.",
-      "imageUrl": "https://images.unsplash.com/photo-1624633022679-f790cc44a517?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxjYXIlMjBvdXRsaW5lfGVufDB8fHx8MTc2NDQ1NzAwOHww&ixlib.rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1624633022679-f790cc44a517?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxjYXIlMjBvdXRsaW5lfGVufDB8fHx8fDE3NjQ0NTcwMDh8MA&ixlib.rb-4.1.0&q=80&w=1080",
       "imageHint": "car outline"
     },
     {
       "id": "google-icon",
       "description": "The Google 'G' logo.",
-      "imageUrl": "https://images.unsplash.com/photo-1529612700005-e35377bf1415?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxnb29nbGUlMjBsb2dvfGVufDB8fHx8MTc2NDUyNzIyOXww&ixlib.rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1529612700005-e35377bf1415?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxnb29nbGUlMjBsb2dvfGVufDB8fHx8fDE3NjQ1MjcyMjV8MA&ixlib.rb-4.1.0&q=80&w=1080",
       "imageHint": "google logo"
     }
   ]
