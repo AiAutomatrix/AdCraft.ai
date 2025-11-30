@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useRef } from 'react';
@@ -34,10 +33,24 @@ export default function GenerateSaleAdPage() {
   };
 
   const handleGenerate = async () => {
+    console.log('handleGenerate called.');
+
     if (!imagePreview) {
       toast({
         title: 'No image selected',
         description: 'Please select an image to generate an ad.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    console.log('User loading status:', isUserLoading);
+    console.log('User object:', user);
+
+    if (isUserLoading) {
+      toast({
+        title: 'Please wait',
+        description: 'User data is still loading. Please try again in a moment.',
         variant: 'destructive',
       });
       return;
@@ -57,7 +70,7 @@ export default function GenerateSaleAdPage() {
 
     try {
       // 1. Upload the image first
-      console.log('Starting image upload...');
+      console.log(`Starting image upload for ad ID: ${newAdId}...`);
       const imageUrl = await uploadImage(imagePreview, newAdId);
       console.log('Image upload successful. URL:', imageUrl);
 
@@ -84,10 +97,10 @@ export default function GenerateSaleAdPage() {
       router.push(`/edit/${newAdId}`);
 
     } catch (error) {
-      console.error('An error occurred during ad generation:', error);
+      console.error('An error occurred during the ad generation process:', error);
       toast({
         title: 'Generation Failed',
-        description: (error as Error).message || 'Could not generate ad. Please try again.',
+        description: (error as Error).message || 'Could not generate ad. Please check the console for details.',
         variant: 'destructive',
       });
     } finally {
@@ -102,7 +115,7 @@ export default function GenerateSaleAdPage() {
     }
   }
 
-  const isButtonDisabled = isGenerating || isUserLoading || !imagePreview;
+  const isButtonDisabled = isGenerating || !imagePreview;
 
   return (
     <div className="container py-12">

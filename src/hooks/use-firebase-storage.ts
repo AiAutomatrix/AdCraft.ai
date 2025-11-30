@@ -22,6 +22,7 @@ export function useFirebaseStorage() {
    * @returns The public download URL of the uploaded image.
    */
   const uploadImage = async (imageUri: string, imageId: string): Promise<string> => {
+    console.log('uploadImage called with imageId:', imageId);
     if (!user) {
       const authError = new Error('User must be logged in to upload images.');
       console.error('Authentication error in uploadImage:', authError);
@@ -38,8 +39,12 @@ export function useFirebaseStorage() {
       const fileExtension = imageUri.substring(imageUri.indexOf('/') + 1, imageUri.indexOf(';base64'));
       const storageRef = ref(storage, `image/${imageId}.${fileExtension}`);
       
+      console.log(`Attempting to upload to path: ${storageRef.fullPath}`);
       await uploadString(storageRef, imageUri, 'data_url');
+      console.log('uploadString successful.');
+      
       const downloadURL = await getDownloadURL(storageRef);
+      console.log(`Successfully got download URL: ${downloadURL}`);
       return downloadURL;
     } catch (error) {
       console.error("Firebase Storage Error: Failed to upload image.", error);
