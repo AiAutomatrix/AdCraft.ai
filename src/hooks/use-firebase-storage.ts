@@ -29,7 +29,7 @@ export function useFirebaseStorage() {
     }
       
     const fileExtension = imageUri.substring(imageUri.indexOf('/') + 1, imageUri.indexOf(';'));
-    const storageRef = ref(storage, `users/${user.uid}/images/${imageId}.${fileExtension}`);
+    const storageRef = ref(storage, `image/${imageId}.${fileExtension}`);
     
     await uploadString(storageRef, imageUri, 'data_url');
     const downloadURL = await getDownloadURL(storageRef);
@@ -49,7 +49,7 @@ export function useFirebaseStorage() {
 
     for (const ext of extensions) {
         try {
-            const storageRef = ref(storage, `users/${user.uid}/images/${imageId}.${ext}`);
+            const storageRef = ref(storage, `image/${imageId}.${ext}`);
             await deleteObject(storageRef);
             deleted = true;
             break; // Exit loop once deleted
