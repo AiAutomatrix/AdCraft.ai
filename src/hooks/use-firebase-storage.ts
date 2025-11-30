@@ -22,18 +22,29 @@ export function useFirebaseStorage() {
    * @returns The public download URL of the uploaded image.
    */
   const uploadImage = async (imageUri: string, imageId: string): Promise<string> => {
-    if (!user) throw new Error('User must be logged in to upload images.');
+    if (!user) {
+      const authError = new Error('User must be logged in to upload images.');
+      console.error('Authentication error in uploadImage:', authError);
+      throw authError;
+    }
     
     if (!imageUri.startsWith('data:image')) {
-        throw new Error('Invalid image data URI.');
+        const formatError = new Error('Invalid image data URI format.');
+        console.error('Data URI error in uploadImage:', formatError);
+        throw formatError;
     }
       
-    const fileExtension = imageUri.substring(imageUri.indexOf('/') + 1, imageUri.indexOf(';base64'));
-    const storageRef = ref(storage, `image/${imageId}.${fileExtension}`);
-    
-    await uploadString(storageRef, imageUri, 'data_url');
-    const downloadURL = await getDownloadURL(storageRef);
-    return downloadURL;
+    try {
+      const fileExtension = imageUri.substring(imageUri.indexOf('/') + 1, imageUri.indexOf(';base64'));
+      const storageRef = ref(storage, `image/${imageId}.${fileExtension}`);
+      
+      await uploadString(storageRef, imageUri, 'data_url');
+      const downloadURL = await getDownloadURL(storageRef);
+      return downloadURL;
+    } catch (error) {
+      console.error("Firebase Storage Error: Failed to upload image.", error);
+      throw error; // Re-throw the error to be caught by the calling function
+    }
   };
   
   /**
