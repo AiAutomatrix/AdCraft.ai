@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   useFirestore,
   useUser,
@@ -14,7 +14,6 @@ import {
   deleteDoc,
   serverTimestamp,
   getDoc,
-  Timestamp,
 } from 'firebase/firestore';
 import { useFirebaseStorage } from './use-firebase-storage';
 import type { Ad } from '@/lib/types';
@@ -124,17 +123,15 @@ export function useFirestoreAds() {
       if (adData && adData.images && adData.images.length > 0) {
         for (const imageUrl of adData.images) {
           if (imageUrl && imageUrl.startsWith('https://firebasestorage.googleapis.com')) {
-            try {
-              deleteImage(imageUrl).catch(err => console.error(`Failed to delete image ${imageUrl}:`, err));
-            } catch (error) {
-              console.error(`Failed to initiate image deletion for ${imageUrl}:`, error);
-            }
+            deleteImage(imageUrl).catch(err => console.error(`Failed to delete image ${imageUrl}:`, err));
           }
         }
       }
       
       const adRef = doc(firestore, `users/${user.uid}/ads`, adId);
-      deleteDoc(adRef).catch(error => {
+      try {
+        await deleteDoc(adRef);
+      } catch (error) {
         errorEmitter.emit(
           'permission-error',
           new FirestorePermissionError({
@@ -142,7 +139,9 @@ export function useFirestoreAds() {
             operation: 'delete',
           })
         )
-      });
+        // Re-throw so the UI can be notified if needed
+        throw error;
+      }
     },
     [user, firestore, deleteImage, ads]
   );

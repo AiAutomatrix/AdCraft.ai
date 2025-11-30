@@ -18,7 +18,6 @@ import { useToast } from '@/hooks/use-toast';
 import type { Ad } from '@/lib/types';
 import { suggestAdImprovementsAction, generateAdTitleAction } from '@/lib/actions';
 import { useUser } from '@/firebase';
-import { useFirebaseStorage } from '@/hooks/use-firebase-storage';
 
 import { ArrowLeft, Copy, Loader2, Save, Sparkles, Trash2, Wand2, Upload, X, RefreshCw } from 'lucide-react';
 import {
@@ -62,7 +61,6 @@ export default function EditAdPage() {
 
   const { getAd, setAd, deleteAd, loading: adsLoading } = useFirestoreAds();
   const { user, isUserLoading } = useUser();
-  const { deleteImage } = useFirebaseStorage();
   const [ad, setLocalAd] = useState<Ad | null>(null);
   const [isNew, setIsNew] = useState(id === 'new');
   
@@ -130,7 +128,7 @@ export default function EditAdPage() {
     const adToSave: Ad = {
       id: newId,
       type: ad?.type || 'sale',
-      createdAt: ad?.createdAt || new Date().toISOString(),
+      createdAt: ad?.createdAt || null, // Keep original creation date
       title: data.title,
       content: data.content,
       images: data.images,
@@ -242,20 +240,6 @@ export default function EditAdPage() {
   
   const removeImage = (index: number) => {
     const currentImages = form.getValues('images') || [];
-    const imageToRemove = currentImages[index];
-    
-    // If it's a firebase storage URL, delete it from storage
-    if (user && imageToRemove.startsWith('https://firebasestorage.googleapis.com')) {
-      deleteImage(imageToRemove).catch(err => {
-        console.error("Failed to delete image from storage:", err);
-        toast({
-          title: "Deletion Failed",
-          description: "Could not remove the image from storage. It may be deleted from the ad but will persist in your storage bucket.",
-          variant: "destructive"
-        });
-      });
-    }
-
     const updatedImages = currentImages.filter((_, i) => i !== index);
     form.setValue('images', updatedImages);
   };
@@ -266,6 +250,7 @@ export default function EditAdPage() {
   
   const images = form.watch('images') || [];
   const adContent = form.watch('content');
+  const adType = ad?.type || 'sale';
 
   return (
     <div className="container py-12">
@@ -320,7 +305,7 @@ export default function EditAdPage() {
                                 {isNew ? "Here's your new AI-generated ad. Refine it and save it." : "Edit your saved ad."}
                             </CardDescription>
                         </div>
-                        <Badge variant={ad.type === 'sale' ? 'default' : 'secondary'} className="capitalize text-sm">{ad.type}</Badge>
+                        <Badge variant={adType === 'sale' ? 'default' : 'secondary'} className="capitalize text-sm">{adType}</Badge>
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-6">
