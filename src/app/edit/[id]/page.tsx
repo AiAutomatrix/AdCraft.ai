@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -171,10 +171,10 @@ export default function EditAdPage() {
   const handleImproveWithAI = async () => {
     setIsImproving(true);
     setAiSuggestions(null);
+
     const currentValues = form.getValues();
     const result = await suggestAdImprovementsAction({
         adCopy: currentValues.content,
-        vehicleDescription: '',
         adType: ad?.type || 'wanted',
     });
 
@@ -256,7 +256,7 @@ export default function EditAdPage() {
                     </FormItem>
                     )}
                 />
-                <Tabs defaultValue={isNew ? 'edit' : 'preview'} className="w-full">
+                <Tabs defaultValue="edit" className="w-full">
                     <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="edit">Edit</TabsTrigger>
                         <TabsTrigger value="preview">Preview</TabsTrigger>

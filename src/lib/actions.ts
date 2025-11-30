@@ -1,9 +1,20 @@
 'use server';
 
-import { generateAdFromImage, GenerateAdFromImageInput, GenerateAdFromImageOutput } from '@/ai/flows/generate-ad-from-image';
 import { generateWantedAd } from '@/ai/flows/generate-wanted-ad';
 import { suggestAdImprovements, SuggestAdImprovementsInput } from '@/ai/flows/suggest-ad-improvements';
 import { generateAdTitle, GenerateAdTitleInput } from '@/ai/flows/generate-ad-title';
+import { generateSaleAdFromText, GenerateSaleAdFromTextInput } from '@/ai/flows/generate-sale-ad-from-text';
+
+// Action to generate a sale ad from a text description
+export async function generateSaleAdFromTextAction(input: GenerateSaleAdFromTextInput) {
+  try {
+    const result = await generateSaleAdFromText(input);
+    return result;
+  } catch (error) {
+    console.error('Error in generateSaleAdFromTextAction:', error);
+    return { error: 'Failed to generate sale ad. The AI model might be unavailable.' };
+  }
+}
 
 // Action to generate a wanted ad from text
 export async function generateWantedAdAction(description: string) {
