@@ -23,6 +23,7 @@ export function useFirebaseStorage() {
    */
   const uploadImage = async (imageUri: string, imageId: string): Promise<string> => {
     console.log('uploadImage called with imageId:', imageId);
+
     if (!user) {
       const authError = new Error('User must be logged in to upload images.');
       console.error('Authentication error in uploadImage:', authError);
@@ -35,21 +36,36 @@ export function useFirebaseStorage() {
         throw formatError;
     }
       
-    try {
-      const fileExtension = imageUri.substring(imageUri.indexOf('/') + 1, imageUri.indexOf(';base64'));
-      const storageRef = ref(storage, `image/${imageId}.${fileExtension}`);
-      
-      console.log(`Attempting to upload to path: ${storageRef.fullPath}`);
-      await uploadString(storageRef, imageUri, 'data_url');
-      console.log('uploadString successful.');
-      
-      const downloadURL = await getDownloadURL(storageRef);
-      console.log(`Successfully got download URL: ${downloadURL}`);
-      return downloadURL;
-    } catch (error) {
-      console.error("Firebase Storage Error: Failed to upload image.", error);
-      throw error; // Re-throw the error to be caught by the calling function
-    }
+    // Using an explicit Promise to have more control over error handling
+    return new Promise((resolve, reject) => {
+        try {
+            const fileExtension = imageUri.substring(imageUri.indexOf('/') + 1, imageUri.indexOf(';base64'));
+            const storageRef = ref(storage, `image/${imageId}.${fileExtension}`);
+            
+            console.log(`Attempting to upload to path: ${storageRef.fullPath}`);
+
+            uploadString(storageRef, imageUri, 'data_url')
+                .then(snapshot => {
+                    console.log('uploadString successful. Snapshot:', snapshot);
+                    getDownloadURL(snapshot.ref)
+                        .then(downloadURL => {
+                            console.log(`Successfully got download URL: ${downloadURL}`);
+                            resolve(downloadURL);
+                        })
+                        .catch(urlError => {
+                            console.error("Firebase Storage Error: Failed to get download URL.", urlError);
+                            reject(urlError);
+                        });
+                })
+                .catch(uploadError => {
+                    console.error("Firebase Storage Error: Failed to upload image.", uploadError);
+                    reject(uploadError);
+                });
+        } catch (error) {
+            console.error("An unexpected error occurred in uploadImage.", error);
+            reject(error);
+        }
+    });
   };
   
   /**
