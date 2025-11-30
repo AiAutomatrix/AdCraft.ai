@@ -1,7 +1,6 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { ArrowRight, FilePlus2, FolderKanban, Wand2 } from 'lucide-react';
 import Image from 'next/image';
@@ -78,7 +77,7 @@ export default function Home() {
             </motion.div>
           </div>
         </div>
-      </section>
+      </motion.section>
       
       <motion.section
         initial={{ opacity: 0, y: 30 }}
