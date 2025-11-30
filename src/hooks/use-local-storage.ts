@@ -13,8 +13,10 @@ import {
   collection,
   deleteDoc,
   writeBatch,
-  serverTimestamp
+  serverTimestamp,
+  deleteField,
 } from 'firebase/firestore';
+import { useFirebaseStorage } from './use-firebase-storage';
 import type { Ad } from '@/lib/types';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
@@ -22,6 +24,7 @@ import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/no
 export function useAdStorage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
+  const { uploadImages, deleteImage } = useFirebaseStorage();
 
   // Local state for ads
   const [localAds, setLocalAds] = useState<Ad[]>([]);
@@ -42,13 +45,13 @@ export function useAdStorage() {
   // Load from local storage on initial mount
   useEffect(() => {
     if (typeof window !== 'undefined' && !user) {
-      const saved = localStorage.getItem('saved-ads');
-      if (saved) {
-        try {
+      try {
+        const saved = localStorage.getItem('saved-ads');
+        if (saved) {
           setLocalAds(JSON.parse(saved));
-        } catch (e) {
-          console.error('Failed to parse ads from localStorage', e);
         }
+      } catch (e) {
+        console.error('Failed to parse ads from localStorage', e);
       }
     }
   }, [user]);
@@ -56,19 +59,20 @@ export function useAdStorage() {
   // Migrate local ads to Firestore when user logs in
   useEffect(() => {
     if (user && firestore && localAds.length > 0) {
-      setIsMigrating(true);
       const migrate = async () => {
+        setIsMigrating(true);
         const batch = writeBatch(firestore);
-        localAds.forEach((ad) => {
+        for (const ad of localAds) {
           const adRef = doc(firestore, `users/${user.uid}/ads`, ad.id);
+          const imageUrls = await uploadImages(ad.images || []);
           const adToSave: Ad = {
             ...ad,
             userId: user.uid,
-            images: ad.images ? [ad.images[0]] : [], // Only migrate the first image
+            images: imageUrls,
             updatedAt: serverTimestamp(),
           };
           batch.set(adRef, adToSave);
-        });
+        }
         await batch.commit();
         localStorage.removeItem('saved-ads');
         setLocalAds([]);
@@ -76,7 +80,7 @@ export function useAdStorage() {
       };
       migrate();
     }
-  }, [user, firestore, localAds]);
+  }, [user, firestore, localAds, uploadImages]);
 
   const ads = useMemo(() => {
     return user ? firestoreAds : localAds;
@@ -85,65 +89,73 @@ export function useAdStorage() {
   const loading = isUserLoading || firestoreLoading || isMigrating;
 
   const setAd = useCallback(
-    (ad: Ad) => {
+    async (ad: Ad): Promise<Ad> => {
       if (user && firestore) {
+        // Handle images: upload new ones, keep existing URLs
+        const imageUrls = await uploadImages(ad.images || []);
+        
         const adRef = doc(firestore, `users/${user.uid}/ads`, ad.id);
-        // Create a version of the ad for Firestore that only includes the first image
-        const adToSaveForFirestore: Ad = {
+        const adToSave: Partial<Ad> = {
           ...ad,
           userId: user.uid,
           updatedAt: serverTimestamp(),
-          // Ensure we only store the first image to avoid exceeding Firestore's limits.
-          // The full list of images is preserved in the local state via the form.
-          images: ad.images && ad.images.length > 0 ? [ad.images[0]] : [],
+          images: imageUrls,
         };
-        setDocumentNonBlocking(adRef, adToSaveForFirestore, { merge: true });
+  
+        // Use a non-blocking update
+        setDocumentNonBlocking(adRef, adToSave, { merge: true });
+        
+        // Return the ad with the final URLs for UI update
+        return { ...ad, images: imageUrls };
+  
       } else {
+        // Local storage logic remains the same
+        const adToSave: Ad = { ...ad, updatedAt: new Date().toISOString() };
         setLocalAds((prevAds) => {
-          const existing = prevAds.find((a) => a.id === ad.id);
+          const existingIndex = prevAds.findIndex((a) => a.id === ad.id);
           let newAds;
-          if (existing) {
-            newAds = prevAds.map((a) => (a.id === ad.id ? { ...ad, updatedAt: new Date().toISOString() } : a));
+          if (existingIndex > -1) {
+            newAds = [...prevAds];
+            newAds[existingIndex] = adToSave;
           } else {
-            newAds = [...prevAds, { ...ad, updatedAt: new Date().toISOString() }];
+            newAds = [...prevAds, adToSave];
           }
           localStorage.setItem('saved-ads', JSON.stringify(newAds));
           return newAds;
         });
+        return adToSave;
       }
     },
-    [user, firestore]
+    [user, firestore, uploadImages]
   );
   
-  const setAds = useCallback(
-    (newAds: Ad[] | ((prevAds: Ad[]) => Ad[])) => {
-      if (user && firestore) {
-        // Not optimized for batch updates, prefer setAd or deleteAd
-      } else {
-        const adsToSet = typeof newAds === 'function' ? newAds(localAds) : newAds;
-        localStorage.setItem('saved-ads', JSON.stringify(adsToSet));
-        setLocalAds(adsToSet);
-      }
-    },
-    [user, firestore, localAds]
-  );
-  
-
   const deleteAd = useCallback(
-    (id: string) => {
+    async (ad: Ad) => {
       if (user && firestore) {
-        const adRef = doc(firestore, `users/${user.uid}/ads`, id);
+        // Delete images from Storage first
+        if (ad.images && ad.images.length > 0) {
+          for (const imageUrl of ad.images) {
+            try {
+              // We don't await this to make deletion feel faster
+              deleteImage(imageUrl);
+            } catch (error) {
+              console.error(`Failed to delete image ${imageUrl}:`, error);
+            }
+          }
+        }
+        // Then delete the Firestore document
+        const adRef = doc(firestore, `users/${user.uid}/ads`, ad.id);
         deleteDocumentNonBlocking(adRef);
       } else {
         setLocalAds((prevAds) => {
-          const newAds = prevAds.filter((ad) => ad.id !== id);
+          const newAds = prevAds.filter((a) => a.id !== ad.id);
           localStorage.setItem('saved-ads', JSON.stringify(newAds));
           return newAds;
         });
       }
     },
-    [user, firestore]
+    [user, firestore, deleteImage]
   );
 
-  return { ads, setAd, setAds, deleteAd, loading, error: firestoreError };
+  return { ads, setAd, deleteAd, loading, error: firestoreError };
 }

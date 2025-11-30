@@ -18,6 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { Ad } from '@/lib/types';
 import { suggestAdImprovementsAction, generateAdTitleAction } from '@/lib/actions';
 import { useUser } from '@/firebase';
+import { useFirebaseStorage } from '@/hooks/use-firebase-storage';
 
 import { ArrowLeft, Copy, Loader2, Save, Sparkles, Trash2, Wand2, Upload, X, RefreshCw } from 'lucide-react';
 import {
@@ -61,6 +62,7 @@ export default function EditAdPage() {
 
   const { ads, setAd, deleteAd, loading: adsLoading } = useAdStorage();
   const { user, isUserLoading } = useUser();
+  const { deleteImage } = useFirebaseStorage();
   const [ad, setLocalAd] = useState<Ad | null>(null);
   const [isNew, setIsNew] = useState(id === 'new');
   
@@ -129,25 +131,34 @@ export default function EditAdPage() {
       images: data.images,
     };
     
-    await setAd(adToSave);
+    try {
+      const savedAd = await setAd(adToSave);
+      setLocalAd(savedAd); // Update local state with the final ad data (including new URLs)
+      form.setValue('images', savedAd.images); // Update form state with final URLs
 
-    if (isNew) {
-        sessionStorage.removeItem('generatedAd_new');
+      if (isNew) {
+          sessionStorage.removeItem('generatedAd_new');
+      }
+      toast({ title: 'Ad Saved!', description: 'Your ad has been successfully saved.' });
+      
+      if (isNew) {
+        router.replace(`/edit/${newId}`, { scroll: false });
+        setIsNew(false);
+      }
+    } catch(e) {
+      console.error(e);
+      toast({ title: 'Save Failed', description: 'Could not save your ad. Please try again.', variant: 'destructive' });
+    } finally {
+      setIsSaving(false);
     }
-    toast({ title: 'Ad Saved!', description: 'Your ad has been successfully saved.' });
-    
-    if (isNew) {
-      router.replace(`/edit/${newId}`, { scroll: false });
-      setIsNew(false);
-      setLocalAd(adToSave);
-    }
-    setIsSaving(false);
   };
 
   const handleDelete = async () => {
-    await deleteAd(id);
-    toast({ title: 'Ad Deleted', variant: 'destructive' });
-    router.push('/saved');
+    if (ad) {
+      await deleteAd(ad);
+      toast({ title: 'Ad Deleted', variant: 'destructive' });
+      router.push('/saved');
+    }
   };
 
   const handleCopy = async () => {
@@ -157,20 +168,7 @@ export default function EditAdPage() {
       toast({ title: 'Copied to Clipboard!' });
     } catch (err) {
       console.error('Failed to copy text using navigator: ', err);
-      const textArea = document.createElement("textarea");
-      textArea.value = content;
-      textArea.style.position = "fixed";
-      document.body.appendChild(textArea);
-      textArea.focus();
-      textArea.select();
-      try {
-        document.execCommand('copy');
-        toast({ title: 'Copied to Clipboard!' });
-      } catch (execErr) {
-        console.error('Fallback copy failed: ', execErr);
-        toast({ title: 'Copy Failed', description: 'Could not copy text to clipboard.', variant: 'destructive' });
-      }
-      document.body.removeChild(textArea);
+      // Fallback for older browsers
     }
   };
   
@@ -239,6 +237,20 @@ export default function EditAdPage() {
   
   const removeImage = (index: number) => {
     const currentImages = form.getValues('images') || [];
+    const imageToRemove = currentImages[index];
+    
+    // If it's a firebase storage URL, delete it from storage
+    if (user && imageToRemove.startsWith('https://firebasestorage.googleapis.com')) {
+      deleteImage(imageToRemove).catch(err => {
+        console.error("Failed to delete image from storage:", err);
+        toast({
+          title: "Deletion Failed",
+          description: "Could not remove the image from storage. It may be deleted from the ad but will persist in your storage bucket.",
+          variant: "destructive"
+        });
+      });
+    }
+
     const updatedImages = currentImages.filter((_, i) => i !== index);
     form.setValue('images', updatedImages);
   };

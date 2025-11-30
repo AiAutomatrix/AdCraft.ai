@@ -1,132 +1,24 @@
-/**
- * This ruleset enforces a strict user-ownership model for the AdCraft AI application.
- * All user-generated content, including user profiles and advertisements, is
- * stored in a hierarchical structure that ensures data privacy and security.
- *
- * Core Philosophy:
- * The fundamental principle is that users have exclusive control over their own
- * data. A user can only read or write documents located within their own data
- * tree, identified by their unique user ID (UID).
- *
- * Data Structure:
- * - /users/{userId}: Stores the public profile for a user.
- * - /users/{userId}/ads/{adId}: Stores the advertisements created by that user.
- *
- * Key Security Decisions:
- * - User Isolation: All data is nested under `/users/{userId}`, making it
- *   impossible for one user to access another user's private information.
- * - No Global Reads: Listing all users from the top-level `/users` collection
- *   is explicitly disallowed to protect user privacy.
- * - Denormalization for Security: Ad documents contain a `userId` field that
- *   mirrors the `userId` from the path. This allows rules to perform fast,
- *   secure ownership checks without costly `get()` calls to parent documents.
- * - Relational Integrity: Rules enforce that the `userId` field within an Ad
- *   document matches the `userId` in its path, preventing data inconsistency.
- *
- * Prototyping Flexibility:
- * In line with a prototyping philosophy, these rules are strict about *who*
- * can access data but flexible on the *shape* of that data. Data validation is
- * limited only to fields critical for authorization (like ownership IDs).
- */
+
 rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
 
-    // Helper functions for reusable logic
-    // ------------------------------------
-
-    /**
-     * Checks if the current request is from an authenticated user.
-     */
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    /**
-     * Checks if the authenticated user's UID matches the provided userId.
-     * This is the core function for verifying document ownership.
-     * @param userId The UID of the resource owner.
-     */
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Helper function to check ownership
     function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
+      return request.auth != null && request.auth.uid == userId;
     }
 
-    /**
-     * Checks for ownership on an existing document. Used for safe updates and deletes.
-     * Prevents operations on documents that do not exist.
-     * @param userId The UID of the resource owner.
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
+    // Match any file path
+    match /{allPaths=**} {
+      // Deny all reads and writes by default
+      allow read, write: if false;
     }
 
-    /**
-     * Validates a user is creating their own user profile document.
-     * Ensures the document's internal `id` field matches the user's auth UID.
-     * @param userId The UID from the path, which must match the auth UID.
-     */
-    function isCreatingOwnProfile(userId) {
-      return isOwner(userId) && request.resource.data.id == userId;
-    }
-
-    /**
-     * Validates that critical relationship fields (like `id`) are not changed during an update.
-     * @param userId The UID from the path.
-     */
-    function isUpdatingOwnProfile(userId) {
-      return isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-    }
-
-    /**
-     * Validates that an Ad being created is correctly linked to its owner.
-     * Checks ownership via path and ensures the internal `userId` field matches.
-     * @param userId The UID of the parent user document.
-     */
-    function isCreatingAdForSelf(userId) {
-      return isOwner(userId) && request.resource.data.userId == userId;
-    }
-
-    /**
-     * Validates an Ad update.
-     * Ensures the user is the owner and that the `userId` field is immutable.
-     * @param userId The UID of the parent user document.
-     */
-    function isUpdatingOwnAd(userId) {
-      return isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-    }
-
-
-    /**
-     * @description Rules for the user profile document.
-     * @path /users/{userId}
-     * @allow (create) An authenticated user creating their own profile document. auth.uid must match {userId}.
-     * @allow (get, update, delete) The document owner accessing their own profile.
-     * @deny (list) Any user attempting to list all documents in the `/users` collection.
-     * @deny (get) A user trying to read another user's profile.
-     * @principle Enforces Self-Creation and Ownership. Prevents user enumeration for privacy.
-     */
-    match /users/{userId} {
-      allow get: if isOwner(userId);
-      allow list: if false;
-      allow create: if isCreatingOwnProfile(userId);
-      allow update: if isUpdatingOwnProfile(userId);
-      allow delete: if isExistingOwner(userId);
-    }
-
-    /**
-     * @description Rules for user-owned ad documents.
-     * @path /users/{userId}/ads/{adId}
-     * @allow (get, list, create, update, delete) The owner of the ads subcollection accessing their own ads.
-     * @deny (get) User 'A' attempting to read an ad belonging to User 'B'.
-     * @deny (create) User 'A' attempting to create an ad under User 'B's path.
-     * @principle Restricts access to a user's own data tree and validates relational integrity.
-     */
-    match /users/{userId}/ads/{adId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isCreatingAdForSelf(userId);
-      allow update: if isUpdatingOwnAd(userId);
-      allow delete: if isExistingOwner(userId);
+    // Allow users to read and write only within their own user folder.
+    // e.g., /users/USER_ID/ad_images/IMAGE_NAME.jpg
+    match /users/{userId}/{allPaths=**} {
+      allow read: if true; // Allow public reads for displaying images
+      allow write: if isOwner(userId);
     }
   }
 }
