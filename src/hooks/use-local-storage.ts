@@ -132,12 +132,11 @@ export function useAdStorage() {
   const deleteAd = useCallback(
     async (ad: Ad | string) => {
       const adId = typeof ad === 'string' ? ad : ad.id;
-      const adData = typeof ad === 'string' ? ads?.find(a => a.id === adId) : ad;
-
+      
       if (user && firestore) {
-        if (!adData) return; // Can't delete if we don't have the ad data
+        const adData = typeof ad === 'string' ? ads?.find(a => a.id === adId) : ad;
         // Delete images from Storage first
-        if (adData.images && adData.images.length > 0) {
+        if (adData && adData.images && adData.images.length > 0) {
           for (const imageUrl of adData.images) {
             // Only try to delete if it's a Firebase Storage URL
             if (imageUrl.startsWith('https://firebasestorage.googleapis.com')) {
@@ -162,7 +161,7 @@ export function useAdStorage() {
         });
       }
     },
-    [user, firestore, deleteImage, ads] // added ads to dependency array
+    [user, firestore, deleteImage, ads]
   );
 
 
