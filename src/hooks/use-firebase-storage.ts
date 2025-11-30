@@ -41,7 +41,7 @@ export function useFirebaseStorage() {
     return new Promise((resolve, reject) => {
         try {
             const fileExtension = imageUri.substring(imageUri.indexOf('/') + 1, imageUri.indexOf(';base64'));
-            const storageRef = ref(storage, `image/${imageId}.${fileExtension}`);
+            const storageRef = ref(storage, `${imageId}.${fileExtension}`);
             
             console.log(`Attempting to upload to path: ${storageRef.fullPath}`);
 
@@ -82,7 +82,7 @@ export function useFirebaseStorage() {
 
     for (const ext of extensions) {
         try {
-            const storageRef = ref(storage, `image/${imageId}.${ext}`);
+            const storageRef = ref(storage, `${imageId}.${ext}`);
             await getDownloadURL(storageRef); // Check if file exists before trying to delete
             await deleteObject(storageRef);
             deleted = true;
