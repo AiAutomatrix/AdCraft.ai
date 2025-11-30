@@ -99,10 +99,6 @@ export default function EditAdPage() {
           };
           setLocalAd(adData);
           form.reset({ title: adData.title, content: adData.content });
-          if(parsedData.images && parsedData.images[0]) {
-            setImageFile(parsedData.images[0]);
-          }
-
         } catch (e) {
           console.error("Failed to parse ad data from session storage", e);
           toast({ title: 'Error loading ad data', variant: 'destructive' });
@@ -134,13 +130,6 @@ export default function EditAdPage() {
     const newId = isNew ? uuidv4() : id;
     
     try {
-      // Step 1: Upload image (COMMENTED OUT)
-      // if (imageFile && imageFile.startsWith('data:image')) {
-      //   await uploadImage(imageFile, newId);
-      //   toast({ title: 'Image Uploaded!', description: 'Your image has been saved to storage.' });
-      // }
-
-      // Step 2: Save text data to Firestore
       const adToSave: Ad = {
         id: newId,
         type: ad?.type || 'sale',
@@ -169,31 +158,8 @@ export default function EditAdPage() {
     }
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImageFile(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const removeImage = () => {
-    setImageFile(null);
-    if(fileInputRef.current) {
-        fileInputRef.current.value = '';
-    }
-  }
-
   const handleDelete = async () => {
     if (ad && !isNew) {
-      // try {
-      //   await deleteImage(ad.id); // Attempt to delete image with same ID as ad
-      // } catch (error) {
-      //   console.warn("Could not delete image from storage, it might not exist.", error);
-      // }
       await deleteAd(ad.id);
       toast({ title: 'Ad Deleted', variant: 'destructive' });
       router.push('/saved');
@@ -252,7 +218,7 @@ export default function EditAdPage() {
     }
   };
 
-  if (!initialDataLoaded || !ad) {
+  if (adsLoading || isUserLoading || !initialDataLoaded) {
     return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
   
@@ -447,3 +413,5 @@ export default function EditAdPage() {
     </div>
   );
 }
+
+    
