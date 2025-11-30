@@ -17,7 +17,7 @@ import {
 } from 'firebase/firestore';
 import { useFirebaseStorage } from './use-firebase-storage';
 import type { Ad } from '@/lib/types';
-import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 // A custom hook to manage ads, either in local storage or Firestore
 export function useAdStorage() {
@@ -68,7 +68,7 @@ export function useAdStorage() {
             ...ad,
             userId: user.uid,
             images: imageUrls,
-            createdAt: ad.createdAt,
+            createdAt: ad.createdAt || serverTimestamp(),
             updatedAt: serverTimestamp(),
           };
           batch.set(adRef, adToSave);
@@ -102,14 +102,14 @@ export function useAdStorage() {
           images: imageUrls,
         };
   
-        // Use a non-blocking update
-        setDocumentNonBlocking(adRef, adToSave, { merge: true });
+        // Use a standard, awaited setDoc to ensure creation
+        await setDoc(adRef, adToSave, { merge: true });
         
         // Return the ad with the final URLs for UI update
         return { ...ad, images: imageUrls, userId: user.uid };
   
       } else {
-        // Local storage logic remains the same
+        // Local storage logic
         const adToSave: Ad = { ...ad, updatedAt: new Date().toISOString() };
         setLocalAds((prevAds) => {
           const existingIndex = prevAds.findIndex((a) => a.id === ad.id);
@@ -134,7 +134,8 @@ export function useAdStorage() {
       const adId = typeof ad === 'string' ? ad : ad.id;
       
       if (user && firestore) {
-        const adData = typeof ad === 'string' ? ads?.find(a => a.id === adId) : ad;
+        const adData = ads?.find(a => a.id === adId);
+
         // Delete images from Storage first
         if (adData && adData.images && adData.images.length > 0) {
           for (const imageUrl of adData.images) {
