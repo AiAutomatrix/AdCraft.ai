@@ -15,7 +15,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useFirestoreAds } from '@/hooks/use-firestore-ads';
-import { useFirebaseStorage } from '@/hooks/use-firebase-storage';
 import { useToast } from '@/hooks/use-toast';
 import type { Ad } from '@/lib/types';
 import { suggestAdImprovementsAction, generateAdTitleAction } from '@/lib/actions';
@@ -57,8 +56,7 @@ export default function EditAdPage() {
   const id = params.id as string;
   const { toast } = useToast();
 
-  const { ads, getAd, setAd, deleteAd, loading: adsLoading } = useFirestoreAds();
-  const { uploadImage, deleteImage } = useFirebaseStorage();
+  const { ads, setAd, deleteAd, loading: adsLoading } = useFirestoreAds();
 
   const { user, isUserLoading } = useUser();
   const [ad, setLocalAd] = useState<Ad | null>(null);
@@ -70,7 +68,6 @@ export default function EditAdPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [initialDataLoaded, setInitialDataLoaded] = useState(false);
   
-  const [currentImage, setCurrentImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
 
@@ -79,6 +76,8 @@ export default function EditAdPage() {
     defaultValues: { title: '', content: '' },
   });
 
+  // This effect handles the initial loading of ad data, either from
+  // session storage (for a new ad) or from Firestore (for an existing ad).
   useEffect(() => {
     if (isUserLoading || adsLoading) return;
     
@@ -88,77 +87,65 @@ export default function EditAdPage() {
         return;
     }
 
+    let adDataToSet: Ad | null = null;
+
     if (isNew) {
-      const newAdData = sessionStorage.getItem('generatedAd_new');
-      if (newAdData) {
+      const newAdDataString = sessionStorage.getItem('generatedAd_new');
+      if (newAdDataString) {
         try {
-          const parsedData = JSON.parse(newAdData);
-          const adData: Ad = {
-            id: parsedData.id || 'new', // Use ID from session storage
+          const parsedData = JSON.parse(newAdDataString);
+          adDataToSet = {
+            id: parsedData.id || uuidv4(), // Ensure ID exists
             createdAt: new Date().toISOString(),
             ...parsedData,
           };
-          setLocalAd(adData);
-          form.reset({ title: adData.title, content: adData.content });
-          if(adData.images && adData.images.length > 0) {
-            setCurrentImage(adData.images[0]);
-          }
         } catch (e) {
           console.error("Failed to parse ad data from session storage", e);
           toast({ title: 'Error loading ad data', variant: 'destructive' });
           router.replace('/create');
+          return;
         }
-      } else if (!initialDataLoaded) {
-        // This handles the case where the user lands on /edit/new directly
-        // but it's not a real new ad. They should be redirected.
-        // Or if they refresh the /edit/new page.
+      } else {
+        // If /edit/new is accessed directly or refreshed, no data will be in session storage.
         toast({ title: 'No ad data found', description: 'Please create an ad first.', variant: 'destructive' });
         router.replace('/create');
         return;
       }
-      setInitialDataLoaded(true);
     } else {
-      if (!initialDataLoaded && ads) {
-        const adData = ads.find(a => a.id === id);
-        if (adData) {
-          setLocalAd(adData);
-          form.reset({ title: adData.title, content: adData.content });
-          if(adData.images && adData.images.length > 0) {
-            setCurrentImage(adData.images[0]);
-          }
-        } else {
-          toast({ title: 'Ad not found', variant: 'destructive' });
-          router.replace('/saved');
+        if (ads) {
+            const existingAd = ads.find(a => a.id === id);
+            if (existingAd) {
+                adDataToSet = existingAd;
+            } else {
+                toast({ title: 'Ad not found', variant: 'destructive' });
+                router.replace('/saved');
+                return;
+            }
         }
-        setInitialDataLoaded(true);
-      }
     }
 
-  }, [id, isNew, form, router, toast, adsLoading, isUserLoading, initialDataLoaded, getAd, user, ads]);
+    if (adDataToSet) {
+        setLocalAd(adDataToSet);
+        form.reset({ title: adDataToSet.title, content: adDataToSet.content });
+    }
+
+    setInitialDataLoaded(true);
+
+  }, [id, isNew, form, router, toast, adsLoading, isUserLoading, user, ads]);
 
 
   const onSubmit = async (data: AdFormData) => {
-    if (!user) return;
+    if (!user || !ad) return;
     
     setIsSaving(true);
-    const adId = isNew ? (ad?.id || uuidv4()) : id;
+    const adId = ad.id;
     
     try {
-      let finalImageUrls = ad?.images || [];
-
-      // If there's a new local image preview, upload it.
-      if (currentImage && currentImage.startsWith('data:image')) {
-        const newUrl = await uploadImage(currentImage, adId);
-        finalImageUrls = [newUrl];
-      }
-
       const adToSave: Ad = {
+        ...ad,
         id: adId,
-        type: ad?.type || 'sale',
-        createdAt: ad?.createdAt || null,
         title: data.title,
         content: data.content,
-        images: finalImageUrls,
         userId: user.uid,
       };
       
@@ -169,11 +156,10 @@ export default function EditAdPage() {
       if (isNew) {
           sessionStorage.removeItem('generatedAd_new');
           setIsNew(false);
-          setLocalAd(savedAd); // Update local state immediately with the saved ad
-          router.replace(`/edit/${adId}`, { scroll: false }); // Then redirect
-      } else {
-        setLocalAd(savedAd);
+          // Replace URL without re-running loader logic
+          router.replace(`/edit/${adId}`, { scroll: false }); 
       }
+      setLocalAd(savedAd); // Update local state with the returned ad
     } catch(e) {
       console.error(e);
       toast({ title: 'Save Failed', description: 'Could not save your ad. Please try again.', variant: 'destructive' });
@@ -184,9 +170,6 @@ export default function EditAdPage() {
 
   const handleDelete = async () => {
     if (ad && !isNew) {
-      if (ad.images && ad.images.length > 0) {
-        await deleteImage(ad.id);
-      }
       await deleteAd(ad.id);
       toast({ title: 'Ad Deleted', variant: 'destructive' });
       router.push('/saved');
@@ -204,14 +187,14 @@ export default function EditAdPage() {
   };
   
   const handleImproveWithAI = async () => {
+    if (!ad) return;
     setIsImproving(true);
     setAiSuggestions(null);
 
     const currentValues = form.getValues();
     const result = await suggestAdImprovementsAction({
         adCopy: currentValues.content,
-        adType: ad?.type || 'sale',
-        images: ad?.images || [],
+        adType: ad.type,
     });
 
     if (result.error) {
@@ -223,11 +206,12 @@ export default function EditAdPage() {
   };
 
   const handleGenerateTitle = async () => {
+    if (!ad) return;
     setIsGeneratingTitle(true);
     const currentValues = form.getValues();
     const result = await generateAdTitleAction({
         adContent: currentValues.content,
-        adType: ad?.type || 'sale',
+        adType: ad.type,
     });
 
     if (result.error) {
@@ -251,23 +235,23 @@ export default function EditAdPage() {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setCurrentImage(reader.result as string);
+        setLocalAd(prev => prev ? {...prev, images: [reader.result as string]} : null);
       };
       reader.readAsDataURL(file);
     }
   };
 
   const removeImage = () => {
-    setCurrentImage(null);
+    setLocalAd(prev => prev ? {...prev, images: []} : null);
   };
 
 
-  if (adsLoading || isUserLoading || !initialDataLoaded) {
+  if (adsLoading || isUserLoading || !initialDataLoaded || !ad) {
     return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
   
   const adContent = form.watch('content');
-  const adType = ad?.type || 'sale';
+  const currentImage = ad.images && ad.images.length > 0 ? ad.images[0] : null;
 
   return (
     <div className="container py-12 max-w-6xl">
@@ -333,7 +317,7 @@ export default function EditAdPage() {
                                     {isNew ? "Here's your new AI-generated ad. Refine it and save it." : "Edit your saved ad."}
                                 </CardDescription>
                             </div>
-                            <Badge variant={adType === 'sale' ? 'default' : 'secondary'} className="capitalize text-sm">{adType}</Badge>
+                            <Badge variant={ad.type === 'sale' ? 'default' : 'secondary'} className="capitalize text-sm">{ad.type}</Badge>
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-6">
@@ -368,6 +352,7 @@ export default function EditAdPage() {
                                 render={({ field }) => (
                                 <FormItem>
                                     <FormLabel className="sr-only">Ad Content</FormLabel>
+
                                     <FormControl>
                                     <Textarea placeholder="Your ad copy will appear here..." {...field} className="min-h-[250px] text-base" />
                                     </FormControl>

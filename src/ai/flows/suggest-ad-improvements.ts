@@ -43,12 +43,6 @@ Ad Type: {{adType}}
 Ad Copy: {{{adCopy}}}
 
 Provide an improved ad copy and a list of specific suggestions for improvement.
-
-Output in the following JSON format:
-{
-  "improvedAdCopy": "",
-  "suggestions": [""]
-}
 `,
 });
 

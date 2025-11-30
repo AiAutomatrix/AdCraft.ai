@@ -18,7 +18,6 @@ import {
 import type { Ad } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { useFirebaseStorage } from './use-firebase-storage';
 
 export function useFirestoreAds() {
   const { user, isUserLoading } = useUser();
@@ -57,23 +56,24 @@ export function useFirestoreAds() {
         type: ad.type,
         userId: user.uid,
         updatedAt: serverTimestamp(),
-        images: ad.images || [],
+        // Save the base64 image string directly to Firestore
+        images: ad.images || [], 
       };
       
-      if (!ad.createdAt) {
+      // If it's a new ad, set the creation timestamp
+      const docSnap = await getDoc(adRef);
+      if (!docSnap.exists()) {
         adToSave.createdAt = serverTimestamp();
       }
 
       try {
         await setDoc(adRef, adToSave, { merge: true });
         
-        // After successful save, construct the final Ad object to return
         const finalAd: Ad = {
             ...ad,
             id: ad.id,
             userId: user.uid,
-            // Note: Timestamps will be handled by Firestore, so we return what we have
-            // The `useCollection` hook will get the true server values.
+            // Timestamps will be properly fetched by the useCollection hook later
         };
 
         setLoading(false);

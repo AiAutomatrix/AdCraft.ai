@@ -6,7 +6,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { useFirebaseStorage } from '@/hooks/use-firebase-storage';
 import { generateAdFromImageAction } from '@/lib/actions';
 import { Loader2, Wand2, Upload, X } from 'lucide-react';
 import Image from 'next/image';
@@ -17,13 +16,20 @@ export default function GenerateSaleAdPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const { uploadImage } = useFirebaseStorage();
   const { user, isUserLoading } = useUser();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      if (file.size > 2 * 1024 * 1024) { // 2MB limit
+        toast({
+          title: 'Image too large',
+          description: 'Please select an image smaller than 2MB.',
+          variant: 'destructive',
+        });
+        return;
+      }
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
@@ -33,8 +39,6 @@ export default function GenerateSaleAdPage() {
   };
 
   const handleGenerate = async () => {
-    console.log('handleGenerate called.');
-
     if (!imagePreview) {
       toast({
         title: 'No image selected',
@@ -43,9 +47,6 @@ export default function GenerateSaleAdPage() {
       });
       return;
     }
-
-    console.log('User loading status:', isUserLoading);
-    console.log('User object:', user);
 
     if (isUserLoading) {
       toast({
@@ -62,6 +63,7 @@ export default function GenerateSaleAdPage() {
         description: 'You must be logged in to generate an ad.',
         variant: 'destructive',
       });
+      router.push('/login');
       return;
     }
 
@@ -69,13 +71,7 @@ export default function GenerateSaleAdPage() {
     const newAdId = uuidv4();
 
     try {
-      // 1. Upload the image first
-      console.log(`Starting image upload for ad ID: ${newAdId}...`);
-      const imageUrl = await uploadImage(imagePreview, newAdId);
-      console.log('Image upload successful. URL:', imageUrl);
-
-      // 2. Generate the ad using the data URI (for AI)
-      console.log('Generating ad from image...');
+      // 1. Generate the ad using the data URI (for AI)
       const result = await generateAdFromImageAction({
         photoDataUri: imagePreview,
         adType: 'sell',
@@ -84,15 +80,14 @@ export default function GenerateSaleAdPage() {
       if (result.error) {
         throw new Error(result.error);
       }
-      console.log('Ad generation successful.');
 
-      // 3. Pass all data to the editor page
+      // 2. Pass all data to the editor page via session storage
       sessionStorage.setItem('generatedAd_new', JSON.stringify({
         id: newAdId,
         title: result.title,
         content: result.adText,
         type: 'sale',
-        images: [imageUrl], // Pass the final Firebase Storage URL
+        images: [imagePreview], // Pass the base64 data URI
       }));
       router.push(`/edit/${newAdId}`);
 
@@ -122,7 +117,7 @@ export default function GenerateSaleAdPage() {
       <Card className="max-w-2xl mx-auto">
         <CardHeader>
           <CardTitle className="font-headline text-3xl">Generate a 'For Sale' Ad from a Photo</CardTitle>
-          <CardDescription>Upload a picture of your vehicle. The image will be stored, and our AI will write a professional ad for you.</CardDescription>
+          <CardDescription>Upload a picture of your vehicle. The image will be stored in your browser and our AI will write an ad for you.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2">
@@ -161,7 +156,7 @@ export default function GenerateSaleAdPage() {
               >
                 <Upload className="h-10 w-10 mb-2" />
                 <span>Click to upload a photo</span>
-                <span className="text-sm">PNG, JPG, or WEBP</span>
+                <span className="text-sm">PNG, JPG, or WEBP (Max 2MB)</span>
               </button>
             )}
           </div>
@@ -171,7 +166,7 @@ export default function GenerateSaleAdPage() {
             ) : (
               <Wand2 className="mr-2 h-5 w-5" />
             )}
-            {isGenerating ? 'Uploading & Generating...' : 'Generate Ad'}
+            {isGenerating ? 'Generating...' : 'Generate Ad'}
           </Button>
         </CardContent>
       </Card>
