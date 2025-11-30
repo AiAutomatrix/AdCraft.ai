@@ -79,7 +79,7 @@ export default function GenerateSaleAdPage() {
       router.push(`/edit/${newAdId}`);
 
     } catch (error) {
-      console.error('Error during ad generation:', error);
+      console.error('An error occurred during ad generation:', error);
       toast({
         title: 'Generation Failed',
         description: (error as Error).message || 'Could not generate ad. Please try again.',
