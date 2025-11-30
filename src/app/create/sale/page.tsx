@@ -97,7 +97,7 @@ export default function GenerateSaleAdPage() {
     }
   }
 
-  const isLoading = isGenerating || isUserLoading;
+  const isLoading = isGenerating;
 
   return (
     <div className="container py-12">
