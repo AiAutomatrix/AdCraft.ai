@@ -1,10 +1,28 @@
 {
   "placeholderImages": [
     {
-      "id": "hero-car",
+      "id": "hero-car-sell",
       "description": "A modern blue sports car parked in a city at dusk.",
       "imageUrl": "https://images.unsplash.com/photo-1621135153894-d168e963b9ba?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8Ymx1ZSUyMHNwb3J0cyUyMGNhcnxlbnwwfHx8fDE3NjQ0NTcwMDh8MA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "blue sports car"
+    },
+    {
+      "id": "hero-car-wanted",
+      "description": "A person looking thoughtfully at a row of cars.",
+      "imageUrl": "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHx5ZWxsb3clMjBjbGFzc2ljJTIwY2FyfGVufDB8fHx8MTc2NDQ1NzAwOHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "classic car search"
+    },
+    {
+      "id": "hero-item-sell",
+      "description": "A vintage camera sitting on a wooden table.",
+      "imageUrl": "https://images.unsplash.com/photo-1516733978393-27785532a2f0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHx2aW50YWdlJTIwY2FtZXJhfGVufDB8fHx8MTc2NDQ1NzAwOHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "vintage camera sale"
+    },
+    {
+      "id": "hero-service-offer",
+      "description": "A professional painter neatly painting a wall with a roller.",
+      "imageUrl": "https://images.unsplash.com/photo-1596495764348-31633595484c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxwYWludGluZyUyMHdhbGx8ZW58MHx8fHwxNzY0NDU3MDA4fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "painting service"
     },
     {
       "id": "classic-car",
@@ -27,7 +45,7 @@
     {
       "id": "google-icon",
       "description": "The Google 'G' logo.",
-      "imageUrl": "https://images.unsplash.com/photo-1529612700005-e35377bf1415?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxnb29nbGUlMjBsb2dvfGVufDB8fHx8MTc2NDUyNzIyOXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1529612700005-e35377bf1415?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxnb29nbGUlMjBsb2dvfGVufDB8fHx8MTc2NDUyNzIyOXww&ixlib.rb-4.1.0&q=80&w=1080",
       "imageHint": "google logo"
     }
   ]
