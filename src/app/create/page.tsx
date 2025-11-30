@@ -1,5 +1,5 @@
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, Car, Search, Image as ImageIcon } from 'lucide-react';
+import { ArrowRight, Car, Search, Image as ImageIcon, Briefcase, Package } from 'lucide-react';
 import Link from 'next/link';
 
 export default function CreateAdPage() {
@@ -8,13 +8,25 @@ export default function CreateAdPage() {
       href: '/create/sale',
       title: 'I want to sell a vehicle',
       description: 'Generate a "For Sale" ad by uploading a photo of your vehicle.',
-      icon: <ImageIcon className="h-10 w-10 text-primary mb-4" />,
+      icon: <Car className="h-10 w-10 text-primary mb-4" />,
     },
     {
       href: '/create/wanted',
       title: 'I am looking for a vehicle',
       description: 'Generate a "wanted" ad by describing the vehicle you need.',
       icon: <Search className="h-10 w-10 text-primary mb-4" />,
+    },
+    {
+      href: '/create/item',
+      title: 'I want to sell an item',
+      description: 'Generate an ad by uploading a photo of your item.',
+      icon: <Package className="h-10 w-10 text-primary mb-4" />,
+    },
+    {
+      href: '/create/service',
+      title: 'I am offering a service',
+      description: 'Generate an ad by describing the service you provide.',
+      icon: <Briefcase className="h-10 w-10 text-primary mb-4" />,
     },
   ];
 
@@ -29,7 +41,7 @@ export default function CreateAdPage() {
         </p>
       </div>
 
-      <div className="mx-auto mt-12 grid max-w-4xl gap-8 md:grid-cols-2">
+      <div className="mx-auto mt-12 grid max-w-5xl gap-8 sm:grid-cols-2 lg:grid-cols-2">
         {options.map((option) => (
           <Link href={option.href} key={option.href} className="group block">
             <Card className="h-full transform transition-transform duration-300 group-hover:-translate-y-2 group-hover:shadow-2xl bg-surface-2 border-border/50 hover:border-primary/50">

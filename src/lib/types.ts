@@ -3,7 +3,7 @@ export type Ad = {
   userId?: string;
   title: string;
   content: string;
-  type: 'sale' | 'wanted';
+  type: 'sale' | 'wanted' | 'item' | 'service';
   images?: string[];
   createdAt: any;
   updatedAt?: any;

@@ -7,7 +7,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowRight, Car, Copy, Edit, FilePlus, Loader2, MoreVertical, Search, Share2, Trash2 } from 'lucide-react';
+import { ArrowRight, Car, Copy, Edit, FilePlus, Loader2, MoreVertical, Search, Share2, Trash2, Package, Briefcase } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -34,7 +34,11 @@ function formatDate(timestamp: any): string {
     }
     // Handle ISO strings
     if (typeof timestamp === 'string') {
-      return new Date(timestamp).toLocaleDateString();
+      try {
+        return new Date(timestamp).toLocaleDateString();
+      } catch (e) {
+        return 'Invalid Date';
+      }
     }
     // Handle JavaScript Date objects
     if (timestamp instanceof Date) {
@@ -93,6 +97,29 @@ export default function SavedAdsPage() {
       toast({ title: "Browser not supported", description: "Share feature not available. Ad content copied to clipboard instead." });
     }
   };
+  
+  const getBadgeVariant = (type: Ad['type']) => {
+    switch (type) {
+      case 'sale':
+      case 'item':
+        return 'default';
+      case 'wanted':
+      case 'service':
+        return 'secondary';
+      default:
+        return 'outline';
+    }
+  };
+
+  const getPlaceholderIcon = (type: Ad['type']) => {
+    switch (type) {
+        case 'sale': return <Car className="w-16 h-16 text-text-secondary opacity-50" />;
+        case 'wanted': return <Search className="w-16 h-16 text-text-secondary opacity-50" />;
+        case 'item': return <Package className="w-16 h-16 text-text-secondary opacity-50" />;
+        case 'service': return <Briefcase className="w-16 h-16 text-text-secondary opacity-50" />;
+        default: return null;
+    }
+  }
 
   if (loading || isUserLoading) {
     return (
@@ -172,16 +199,14 @@ export default function SavedAdsPage() {
               <div className="aspect-video bg-surface-1 flex items-center justify-center relative">
                   {ad.images && ad.images.length > 0 ? (
                       <Image src={ad.images[0]} alt={ad.title} layout="fill" objectFit="cover" />
-                  ) : ad.type === 'sale' ? (
-                      <Car className="w-16 h-16 text-text-secondary opacity-50" />
                   ) : (
-                      <Search className="w-16 h-16 text-text-secondary opacity-50" />
+                      getPlaceholderIcon(ad.type)
                   )}
               </div>
               <CardHeader>
                 <div className="flex justify-between items-start gap-4">
                   <CardTitle className="font-headline text-xl pr-2 line-clamp-2">{ad.title}</CardTitle>
-                  <Badge variant={ad.type === 'sale' ? 'default' : 'secondary'} className="capitalize flex-shrink-0">{ad.type}</Badge>
+                  <Badge variant={getBadgeVariant(ad.type)} className="capitalize flex-shrink-0">{ad.type}</Badge>
                 </div>
                 <CardDescription>
                   Created on {formatDate(ad.createdAt)}

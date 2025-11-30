@@ -20,7 +20,7 @@ import type { Ad } from '@/lib/types';
 import { suggestAdImprovementsAction, generateAdTitleAction } from '@/lib/actions';
 import { useUser } from '@/firebase';
 
-import { ArrowLeft, Copy, Loader2, Save, Sparkles, Trash2, Wand2, RefreshCw, Upload, X } from 'lucide-react';
+import { ArrowLeft, Copy, Loader2, Save, Sparkles, Trash2, Wand2, RefreshCw, Upload, X, Search, Package, Briefcase, Car } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -88,26 +88,19 @@ export default function EditAdPage() {
     }
 
     let adDataToSet: Ad | null = null;
+    const newAdDataString = sessionStorage.getItem('generatedAd_new');
 
-    if (isNew) {
-      const newAdDataString = sessionStorage.getItem('generatedAd_new');
-      if (newAdDataString) {
-        try {
-          const parsedData = JSON.parse(newAdDataString);
-          adDataToSet = {
-            id: parsedData.id || uuidv4(), // Ensure ID exists
-            createdAt: new Date().toISOString(),
-            ...parsedData,
-          };
-        } catch (e) {
-          console.error("Failed to parse ad data from session storage", e);
-          toast({ title: 'Error loading ad data', variant: 'destructive' });
-          router.replace('/create');
-          return;
-        }
-      } else {
-        // If /edit/new is accessed directly or refreshed, no data will be in session storage.
-        toast({ title: 'No ad data found', description: 'Please create an ad first.', variant: 'destructive' });
+    if (isNew && newAdDataString) {
+      try {
+        const parsedData = JSON.parse(newAdDataString);
+        adDataToSet = {
+          id: parsedData.id || uuidv4(), // Ensure ID exists
+          createdAt: new Date().toISOString(),
+          ...parsedData,
+        };
+      } catch (e) {
+        console.error("Failed to parse ad data from session storage", e);
+        toast({ title: 'Error loading ad data', variant: 'destructive' });
         router.replace('/create');
         return;
       }
@@ -116,7 +109,7 @@ export default function EditAdPage() {
             const existingAd = ads.find(a => a.id === id);
             if (existingAd) {
                 adDataToSet = existingAd;
-            } else {
+            } else if (!isNew) { // Only show not found if it's not a new ad being created
                 toast({ title: 'Ad not found', variant: 'destructive' });
                 router.replace('/saved');
                 return;
@@ -127,6 +120,11 @@ export default function EditAdPage() {
     if (adDataToSet) {
         setLocalAd(adDataToSet);
         form.reset({ title: adDataToSet.title, content: adDataToSet.content });
+    } else if (isNew && !newAdDataString) {
+        // If /edit/new is accessed directly or refreshed, no data will be in session storage.
+        toast({ title: 'No ad data found', description: 'Please create an ad first.', variant: 'destructive' });
+        router.replace('/create');
+        return;
     }
 
     setInitialDataLoaded(true);
@@ -194,7 +192,7 @@ export default function EditAdPage() {
     const currentValues = form.getValues();
     const result = await suggestAdImprovementsAction({
         adCopy: currentValues.content,
-        adType: ad.type,
+        adType: ad.type as 'sale' | 'wanted', // API expects specific enum
     });
 
     if (result.error) {
@@ -211,7 +209,7 @@ export default function EditAdPage() {
     const currentValues = form.getValues();
     const result = await generateAdTitleAction({
         adContent: currentValues.content,
-        adType: ad.type,
+        adType: ad.type as 'sale' | 'wanted', // API expects specific enum
     });
 
     if (result.error) {
@@ -233,6 +231,14 @@ export default function EditAdPage() {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      if (file.size > 2 * 1024 * 1024) { // 2MB limit
+        toast({
+          title: 'Image too large',
+          description: 'Please select an image smaller than 2MB.',
+          variant: 'destructive',
+        });
+        return;
+      }
       const reader = new FileReader();
       reader.onloadend = () => {
         setLocalAd(prev => prev ? {...prev, images: [reader.result as string]} : null);
@@ -241,10 +247,16 @@ export default function EditAdPage() {
     }
   };
 
-  const removeImage = () => {
-    setLocalAd(prev => prev ? {...prev, images: []} : null);
+  const removeImage = (index: number) => {
+    setLocalAd(prev => {
+        if (!prev || !prev.images) return prev;
+        const newImages = [...prev.images];
+        newImages.splice(index, 1);
+        return {...prev, images: newImages};
+    });
   };
 
+  const adAllowsImages = ad?.type === 'sale' || ad?.type === 'item';
 
   if (adsLoading || isUserLoading || !initialDataLoaded || !ad) {
     return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
@@ -261,53 +273,66 @@ export default function EditAdPage() {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             <div className="grid md:grid-cols-2 gap-8">
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="font-headline text-2xl">Vehicle Image</CardTitle>
-                        <CardDescription>Upload an image for your ad.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <input
-                            type="file"
-                            accept="image/*"
-                            ref={fileInputRef}
-                            onChange={handleFileChange}
-                            className="hidden"
-                            disabled={isSaving}
-                        />
-                        {currentImage ? (
-                            <div className="relative group">
-                                <Image
-                                src={currentImage}
-                                alt="Vehicle preview"
-                                width={600}
-                                height={400}
-                                className="rounded-lg object-cover w-full aspect-video"
-                                />
-                                <Button 
-                                    type="button"
-                                    variant="destructive" 
-                                    size="icon" 
-                                    className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    onClick={removeImage}
-                                    disabled={isSaving}
-                                >
-                                    <X className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        ) : (
-                            <button
-                                type="button"
-                                onClick={() => fileInputRef.current?.click()}
+                {adAllowsImages ? (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="font-headline text-2xl">Image</CardTitle>
+                            <CardDescription>Upload an image for your ad.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                ref={fileInputRef}
+                                onChange={handleFileChange}
+                                className="hidden"
                                 disabled={isSaving}
-                                className="w-full h-64 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center text-muted-foreground hover:bg-muted/50 hover:border-primary transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                                <Upload className="h-10 w-10 mb-2" />
-                                <span>Click to upload a photo</span>
-                            </button>
-                        )}
+                            />
+                            {currentImage ? (
+                                <div className="relative group">
+                                    <Image
+                                    src={currentImage}
+                                    alt="Ad preview"
+                                    width={600}
+                                    height={400}
+                                    className="rounded-lg object-cover w-full aspect-video"
+                                    />
+                                    <Button 
+                                        type="button"
+                                        variant="destructive" 
+                                        size="icon" 
+                                        className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        onClick={() => removeImage(0)}
+                                        disabled={isSaving}
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    disabled={isSaving}
+                                    className="w-full h-64 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center text-muted-foreground hover:bg-muted/50 hover:border-primary transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    <Upload className="h-10 w-10 mb-2" />
+                                    <span>Click to upload a photo</span>
+                                </button>
+                            )}
+                        </CardContent>
+                    </Card>
+                ) : (
+                  <Card>
+                    <CardHeader>
+                        <CardTitle className="font-headline text-2xl">Image</CardTitle>
+                        <CardDescription>This ad type does not support images.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex items-center justify-center h-64 border-2 border-dashed border-border rounded-lg bg-muted/20">
+                         {ad.type === 'wanted' && <Search className="w-24 h-24 text-muted-foreground/50" />}
+                         {ad.type === 'service' && <Briefcase className="w-24 h-24 text-muted-foreground/50" />}
                     </CardContent>
-                </Card>
+                  </Card>
+                )}
                 <Card>
                     <CardHeader>
                         <div className="flex justify-between items-start">
@@ -317,7 +342,7 @@ export default function EditAdPage() {
                                     {isNew ? "Here's your new AI-generated ad. Refine it and save it." : "Edit your saved ad."}
                                 </CardDescription>
                             </div>
-                            <Badge variant={ad.type === 'sale' ? 'default' : 'secondary'} className="capitalize text-sm">{ad.type}</Badge>
+                            <Badge variant={ad.type === 'sale' || ad.type === 'item' ? 'default' : 'secondary'} className="capitalize text-sm">{ad.type}</Badge>
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-6">
