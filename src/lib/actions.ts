@@ -32,7 +32,8 @@ export async function generateAdTitleAction(input: GenerateAdTitleInput) {
     try {
       const result = await generateAdTitle(input);
       return { title: result };
-    } catch (error)      console.error('Error in generateAdTitleAction:', error);
+    } catch (error) {
+      console.error('Error in generateAdTitleAction:', error);
       return { error: 'Failed to generate ad title. The AI model might be unavailable.' };
     }
 }
