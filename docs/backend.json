@@ -1,0 +1,138 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the AdCraft AI application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user.",
+          "format": "uuid"
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user.",
+          "format": "email"
+        },
+        "username": {
+          "type": "string",
+          "description": "Username of the user."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the user account was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "username",
+        "createdAt"
+      ]
+    },
+    "Ad": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Ad",
+      "type": "object",
+      "description": "Represents a vehicle advertisement generated and saved by the user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ad.",
+          "format": "uuid"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Ad)"
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the advertisement."
+        },
+        "description": {
+          "type": "string",
+          "description": "The full text content of the advertisement."
+        },
+        "ad_type": {
+          "type": "string",
+          "description": "The type of Ad being placed. Can be 'for sale' or 'wanted'."
+        },
+        "vehicleImageUrl": {
+          "type": "string",
+          "description": "URL to the image of the vehicle associated with the ad.  Can be an empty string if there is no image.",
+          "format": "uri"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the ad was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the ad was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "title",
+        "description",
+        "ad_type",
+        "vehicleImageUrl",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profile information. Each user has a unique document.  Authorization: Only the user themselves (or admin roles) can read/write their own document.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user, matching the Firebase Auth UID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/ads/{adId}",
+        "definition": {
+          "entityName": "Ad",
+          "schema": {
+            "$ref": "#/backend/entities/Ad"
+          },
+          "description": "Stores ads created by users. Includes denormalized 'userId' for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user who created the ad. It is used for path-based access control."
+            },
+            {
+              "name": "adId",
+              "description": "The unique identifier for the ad."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to support the AdCraft AI application's requirements, focusing on user-generated ads and AI-powered ad generation. The structure prioritizes authorization independence, clarity, and scalability, adhering to the core design principles.\n\nUsers and their ads are organized under the `/users/{userId}/ads/{adId}` path. This establishes clear ownership and simplifies security rules based on the authenticated `userId`. This approach ensures that only the authenticated user can access their own ads, facilitating straightforward, path-based access control.\n\nAuthorization Independence (CRITICAL): The `Ad` document includes the `userId` field. This redundancy of the user ID, already present in the path, enables security rules to validate the ad's ownership directly without requiring `get()` calls to parent documents or other collections. This ensures atomic operations and simplifies debugging. For example, the security rules can easily verify that `request.auth.uid == resource.data.userId` without additional lookups.\n\nQAPs (Rules are not Filters): The data structure allows for efficient and secure `list` operations. Since ads are stored under each user's specific path (`/users/{userId}/ads/{adId}`), listing ads for a specific user is straightforward and doesn't require filtering across a large collection. The security rules can ensure that only the authenticated user can list their own ads, preventing unauthorized access. The structural segregation of user-owned data ensures homogeneous security requirements for each collection, further simplifying security rules.\n\nThis structure supports the application's core features, including ad saving, editing, and AI-powered ad generation. The separation of ads by user allows for easy management and retrieval of user-specific content."
+  }
+}
