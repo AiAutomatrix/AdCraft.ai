@@ -62,6 +62,7 @@ export function useFirestoreAds() {
           images: imageUrls,
         };
         
+        // Only set createdAt if it's a new ad (doesn't have one yet)
         if (!ad.createdAt) {
           adToSave.createdAt = serverTimestamp();
         }

@@ -6,7 +6,7 @@ export type Ad = {
   title: string;
   content: string;
   type: 'sale' | 'wanted';
-  createdAt: string | Timestamp;
-  updatedAt?: string | Timestamp;
+  createdAt: any;
+  updatedAt?: any;
   images?: string[];
 };
