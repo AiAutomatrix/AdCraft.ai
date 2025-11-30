@@ -14,7 +14,6 @@ import {
   deleteDoc,
   writeBatch,
   serverTimestamp,
-  deleteField,
 } from 'firebase/firestore';
 import { useFirebaseStorage } from './use-firebase-storage';
 import type { Ad } from '@/lib/types';
@@ -40,7 +39,7 @@ export function useAdStorage() {
     data: firestoreAds,
     isLoading: firestoreLoading,
     error: firestoreError,
-  } = useCollection(firestore ? userAdsCollection : null);
+  } = useCollection<Ad>(firestore ? userAdsCollection : null);
 
   // Load from local storage on initial mount
   useEffect(() => {
@@ -64,11 +63,13 @@ export function useAdStorage() {
         const batch = writeBatch(firestore);
         for (const ad of localAds) {
           const adRef = doc(firestore, `users/${user.uid}/ads`, ad.id);
+          // When migrating, ensure userId is set correctly.
           const imageUrls = await uploadImages(ad.images || []);
-          const adToSave: Ad = {
+          const adToSave: Omit<Ad, 'createdAt'> & { createdAt: any; updatedAt: any; userId: string; } = {
             ...ad,
-            userId: user.uid,
+            userId: user.uid, // This was the missing piece
             images: imageUrls,
+            createdAt: ad.createdAt,
             updatedAt: serverTimestamp(),
           };
           batch.set(adRef, adToSave);
@@ -106,7 +107,7 @@ export function useAdStorage() {
         setDocumentNonBlocking(adRef, adToSave, { merge: true });
         
         // Return the ad with the final URLs for UI update
-        return { ...ad, images: imageUrls };
+        return { ...ad, images: imageUrls, userId: user.uid };
   
       } else {
         // Local storage logic remains the same
@@ -135,11 +136,14 @@ export function useAdStorage() {
         // Delete images from Storage first
         if (ad.images && ad.images.length > 0) {
           for (const imageUrl of ad.images) {
-            try {
-              // We don't await this to make deletion feel faster
-              deleteImage(imageUrl);
-            } catch (error) {
-              console.error(`Failed to delete image ${imageUrl}:`, error);
+            // Only try to delete if it's a Firebase Storage URL
+            if (imageUrl.startsWith('https://firebasestorage.googleapis.com')) {
+              try {
+                // We don't await this to make deletion feel faster
+                deleteImage(imageUrl);
+              } catch (error) {
+                console.error(`Failed to delete image ${imageUrl}:`, error);
+              }
             }
           }
         }
