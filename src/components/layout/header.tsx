@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Menu, Sparkles } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -66,12 +66,20 @@ export function Header() {
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="pr-0">
-            <Link href="/" className="mr-6 flex items-center space-x-2">
-                <Logo className="h-6 w-6 text-primary" />
-                <span className="font-bold font-headline">
-                AdCraft AI
-                </span>
-            </Link>
+            <SheetHeader className="text-left">
+              <SheetTitle>
+                <Link href="/" className="flex items-center space-x-2">
+                    <Logo className="h-6 w-6 text-primary" />
+                    <span className="font-bold font-headline">
+                    AdCraft AI
+                    </span>
+                </Link>
+              </SheetTitle>
+              <SheetDescription className="sr-only">
+                Main application navigation links.
+              </SheetDescription>
+            </SheetHeader>
+            
             <div className="flex flex-col space-y-3 pt-6">
                 {navLinks.map((link) => (
                     <Link
