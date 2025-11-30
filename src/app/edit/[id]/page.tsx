@@ -150,16 +150,16 @@ export default function EditAdPage() {
       };
       
       const savedAd = await setAd(adToSave);
-      setLocalAd(savedAd);
-
-      if (isNew) {
-          sessionStorage.removeItem('generatedAd_new');
-      }
+      
       toast({ title: 'Ad Saved!', description: 'Your ad text has been successfully saved.' });
       
       if (isNew) {
-        router.replace(`/edit/${newId}`, { scroll: false });
-        setIsNew(false);
+          sessionStorage.removeItem('generatedAd_new');
+          setLocalAd(savedAd); // Update local state immediately with the saved ad
+          router.replace(`/edit/${newId}`, { scroll: false }); // Then redirect
+          setIsNew(false);
+      } else {
+        setLocalAd(savedAd);
       }
     } catch(e) {
       console.error(e);
@@ -447,5 +447,3 @@ export default function EditAdPage() {
     </div>
   );
 }
-
-    
