@@ -18,6 +18,7 @@ import {
 import type { Ad } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { useFirebaseStorage } from './use-firebase-storage';
 
 export function useFirestoreAds() {
   const { user, isUserLoading } = useUser();
@@ -46,27 +47,35 @@ export function useFirestoreAds() {
         throw new Error('User must be logged in to save an ad.');
       }
       setLoading(true);
+
+      const adRef = doc(firestore, `users/${user.uid}/ads`, ad.id);
       
+      const adToSave: Partial<Ad> & { userId: string; updatedAt: any; createdAt?: any; } = {
+        id: ad.id,
+        title: ad.title,
+        content: ad.content,
+        type: ad.type,
+        userId: user.uid,
+        updatedAt: serverTimestamp(),
+        images: ad.images || [],
+      };
+      
+      if (!ad.createdAt) {
+        adToSave.createdAt = serverTimestamp();
+      }
+
       try {
-        const adRef = doc(firestore, `users/${user.uid}/ads`, ad.id);
-        
-        // Create an object with only the text data for Firestore
-        const adToSave: Omit<Ad, 'images'> & { userId: string; updatedAt: any; createdAt?: any; } = {
-          id: ad.id,
-          title: ad.title,
-          content: ad.content,
-          type: ad.type,
-          userId: user.uid,
-          updatedAt: serverTimestamp(),
-        };
-        
-        if (!ad.createdAt) {
-          adToSave.createdAt = serverTimestamp();
-        }
-
         await setDoc(adRef, adToSave, { merge: true });
+        
+        // After successful save, construct the final Ad object to return
+        const finalAd: Ad = {
+            ...ad,
+            id: ad.id,
+            userId: user.uid,
+            // Note: Timestamps will be handled by Firestore, so we return what we have
+            // The `useCollection` hook will get the true server values.
+        };
 
-        const finalAd = { ...ad, userId: user.uid };
         setLoading(false);
         return finalAd;
       } catch (e: any) {
@@ -74,10 +83,10 @@ export function useFirestoreAds() {
         const permissionError = new FirestorePermissionError({
           path: `users/${user.uid}/ads/${ad.id}`,
           operation: 'write',
-          requestResourceData: ad,
+          requestResourceData: adToSave,
         });
         errorEmitter.emit('permission-error', permissionError);
-        throw e;
+        throw e; // Re-throw to be caught by the calling function's catch block
       }
     },
     [user, firestore]
@@ -114,7 +123,6 @@ export function useFirestoreAds() {
         throw new Error('User must be logged in to delete an ad.');
       }
       
-      // Delete the Firestore document
       const adRef = doc(firestore, `users/${user.uid}/ads`, adId);
       try {
         await deleteDoc(adRef);

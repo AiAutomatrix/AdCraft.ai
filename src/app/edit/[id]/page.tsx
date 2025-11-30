@@ -15,7 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useFirestoreAds } from '@/hooks/use-firestore-ads';
-// import { useFirebaseStorage } from '@/hooks/use-firebase-storage';
+import { useFirebaseStorage } from '@/hooks/use-firebase-storage';
 import { useToast } from '@/hooks/use-toast';
 import type { Ad } from '@/lib/types';
 import { suggestAdImprovementsAction, generateAdTitleAction } from '@/lib/actions';
@@ -57,19 +57,20 @@ export default function EditAdPage() {
   const id = params.id as string;
   const { toast } = useToast();
 
-  const { getAd, setAd, deleteAd, loading: adsLoading } = useFirestoreAds();
-  // const { uploadImage, deleteImage } = useFirebaseStorage();
+  const { ads, getAd, setAd, deleteAd, loading: adsLoading } = useFirestoreAds();
+  const { uploadImage, deleteImage } = useFirebaseStorage();
 
   const { user, isUserLoading } = useUser();
   const [ad, setLocalAd] = useState<Ad | null>(null);
-  const [isNew, setIsNew] = useState(id === 'new');
+  const [isNew, setIsNew] = useState(id === 'new' || !!sessionStorage.getItem('generatedAd_new'));
   
   const [aiSuggestions, setAiSuggestions] = useState<AISuggestions | null>(null);
   const [isImproving, setIsImproving] = useState(false);
   const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [initialDataLoaded, setInitialDataLoaded] = useState(false);
-  const [imageFile, setImageFile] = useState<string | null>(null); // Holds data URI
+  
+  const [currentImage, setCurrentImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
 
@@ -79,7 +80,7 @@ export default function EditAdPage() {
   });
 
   useEffect(() => {
-    if (adsLoading || isUserLoading) return;
+    if (isUserLoading || adsLoading) return;
     
     if (!user) {
         toast({ title: 'Authentication Required', description: 'You must be logged in to edit ads.', variant: 'destructive' });
@@ -93,60 +94,83 @@ export default function EditAdPage() {
         try {
           const parsedData = JSON.parse(newAdData);
           const adData: Ad = {
-            id: 'new', // Temporary ID
+            id: parsedData.id || 'new', // Use ID from session storage
             createdAt: new Date().toISOString(),
             ...parsedData,
           };
           setLocalAd(adData);
           form.reset({ title: adData.title, content: adData.content });
+          if(adData.images && adData.images.length > 0) {
+            setCurrentImage(adData.images[0]);
+          }
         } catch (e) {
           console.error("Failed to parse ad data from session storage", e);
           toast({ title: 'Error loading ad data', variant: 'destructive' });
           router.replace('/create');
         }
       } else if (!initialDataLoaded) {
+        // This handles the case where the user lands on /edit/new directly
+        // but it's not a real new ad. They should be redirected.
+        // Or if they refresh the /edit/new page.
         toast({ title: 'No ad data found', description: 'Please create an ad first.', variant: 'destructive' });
         router.replace('/create');
         return;
       }
       setInitialDataLoaded(true);
     } else {
-      getAd(id).then(adData => {
+      if (!initialDataLoaded && ads) {
+        const adData = ads.find(a => a.id === id);
         if (adData) {
           setLocalAd(adData);
           form.reset({ title: adData.title, content: adData.content });
+          if(adData.images && adData.images.length > 0) {
+            setCurrentImage(adData.images[0]);
+          }
         } else {
           toast({ title: 'Ad not found', variant: 'destructive' });
           router.replace('/saved');
         }
         setInitialDataLoaded(true);
-      })
+      }
     }
 
-  }, [id, isNew, form, router, toast, adsLoading, isUserLoading, initialDataLoaded, getAd, user]);
+  }, [id, isNew, form, router, toast, adsLoading, isUserLoading, initialDataLoaded, getAd, user, ads]);
+
 
   const onSubmit = async (data: AdFormData) => {
+    if (!user) return;
+    
     setIsSaving(true);
-    const newId = isNew ? uuidv4() : id;
+    const adId = isNew ? (ad?.id || uuidv4()) : id;
     
     try {
+      let finalImageUrls = ad?.images || [];
+
+      // If there's a new local image preview, upload it.
+      if (currentImage && currentImage.startsWith('data:image')) {
+        const newUrl = await uploadImage(currentImage, adId);
+        finalImageUrls = [newUrl];
+      }
+
       const adToSave: Ad = {
-        id: newId,
+        id: adId,
         type: ad?.type || 'sale',
         createdAt: ad?.createdAt || null,
         title: data.title,
         content: data.content,
+        images: finalImageUrls,
+        userId: user.uid,
       };
       
       const savedAd = await setAd(adToSave);
       
-      toast({ title: 'Ad Saved!', description: 'Your ad text has been successfully saved.' });
+      toast({ title: 'Ad Saved!', description: 'Your ad has been successfully saved.' });
       
       if (isNew) {
           sessionStorage.removeItem('generatedAd_new');
-          setLocalAd(savedAd); // Update local state immediately with the saved ad
-          router.replace(`/edit/${newId}`, { scroll: false }); // Then redirect
           setIsNew(false);
+          setLocalAd(savedAd); // Update local state immediately with the saved ad
+          router.replace(`/edit/${adId}`, { scroll: false }); // Then redirect
       } else {
         setLocalAd(savedAd);
       }
@@ -160,6 +184,9 @@ export default function EditAdPage() {
 
   const handleDelete = async () => {
     if (ad && !isNew) {
+      if (ad.images && ad.images.length > 0) {
+        await deleteImage(ad.id);
+      }
       await deleteAd(ad.id);
       toast({ title: 'Ad Deleted', variant: 'destructive' });
       router.push('/saved');
@@ -184,6 +211,7 @@ export default function EditAdPage() {
     const result = await suggestAdImprovementsAction({
         adCopy: currentValues.content,
         adType: ad?.type || 'sale',
+        images: ad?.images || [],
     });
 
     if (result.error) {
@@ -218,6 +246,22 @@ export default function EditAdPage() {
     }
   };
 
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCurrentImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setCurrentImage(null);
+  };
+
+
   if (adsLoading || isUserLoading || !initialDataLoaded) {
     return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
@@ -233,10 +277,10 @@ export default function EditAdPage() {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             <div className="grid md:grid-cols-2 gap-8">
-                {/* <Card>
+                <Card>
                     <CardHeader>
                         <CardTitle className="font-headline text-2xl">Vehicle Image</CardTitle>
-                        <CardDescription>Upload an image for AI analysis (optional). It is not saved with the ad.</CardDescription>
+                        <CardDescription>Upload an image for your ad.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <input
@@ -247,16 +291,17 @@ export default function EditAdPage() {
                             className="hidden"
                             disabled={isSaving}
                         />
-                        {imageFile ? (
+                        {currentImage ? (
                             <div className="relative group">
                                 <Image
-                                src={imageFile}
+                                src={currentImage}
                                 alt="Vehicle preview"
                                 width={600}
                                 height={400}
                                 className="rounded-lg object-cover w-full aspect-video"
                                 />
                                 <Button 
+                                    type="button"
                                     variant="destructive" 
                                     size="icon" 
                                     className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -270,17 +315,16 @@ export default function EditAdPage() {
                             <button
                                 type="button"
                                 onClick={() => fileInputRef.current?.click()}
-                                disabled={isSaving || !isNew}
+                                disabled={isSaving}
                                 className="w-full h-64 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center text-muted-foreground hover:bg-muted/50 hover:border-primary transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 <Upload className="h-10 w-10 mb-2" />
                                 <span>Click to upload a photo</span>
-                                <span className="text-sm">Only for new ads</span>
                             </button>
                         )}
                     </CardContent>
-                </Card> */}
-                <Card className="md:col-span-2">
+                </Card>
+                <Card>
                     <CardHeader>
                         <div className="flex justify-between items-start">
                             <div>
@@ -356,14 +400,14 @@ export default function EditAdPage() {
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                                <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
                 )}
                  <Dialog onOpenChange={(open) => !open && setAiSuggestions(null)}>
                     <DialogTrigger asChild>
-                        <Button type="button" variant="outline" onClick={handleImproveWithAI} className="bg-accent/10 text-accent-foreground border-accent/30 hover:bg-accent/20">
+                        <Button type="button" variant="outline" onClick={handleImproveWithAI} className="bg-secondary/20 text-secondary-foreground border-secondary/30 hover:bg-secondary/30">
                             {isImproving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
                             Improve with AI
                         </Button>
@@ -379,7 +423,7 @@ export default function EditAdPage() {
                             <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-4">
                                 <div>
                                     <h3 className="font-semibold mb-2">Suggested New Version:</h3>
-                                    <blockquote className="border-l-2 border-primary pl-4 py-2 bg-secondary/30 rounded-r-md">
+                                    <blockquote className="border-l-2 border-primary pl-4 py-2 bg-surface-2 rounded-r-md">
                                         <p className="text-sm text-foreground">{aiSuggestions.improvedAdCopy}</p>
                                     </blockquote>
                                 </div>
@@ -413,5 +457,3 @@ export default function EditAdPage() {
     </div>
   );
 }
-
-    
