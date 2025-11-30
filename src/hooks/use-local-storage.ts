@@ -61,7 +61,7 @@ export function useAdStorage() {
         const batch = writeBatch(firestore);
         localAds.forEach((ad) => {
           const adRef = doc(firestore, `users/${user.uid}/ads`, ad.id);
-          batch.set(adRef, {...ad, migrated: true, createdAt: ad.createdAt || serverTimestamp() });
+          batch.set(adRef, {...ad, userId: user.uid, migrated: true, createdAt: ad.createdAt || serverTimestamp() });
         });
         await batch.commit();
         localStorage.removeItem('saved-ads');
@@ -82,7 +82,8 @@ export function useAdStorage() {
     (ad: Ad) => {
       if (user && firestore) {
         const adRef = doc(firestore, `users/${user.uid}/ads`, ad.id);
-        setDocumentNonBlocking(adRef, ad, { merge: true });
+        const adToSave = { ...ad, userId: user.uid };
+        setDocumentNonBlocking(adRef, adToSave, { merge: true });
       } else {
         setLocalAds((prevAds) => {
           const existing = prevAds.find((a) => a.id === ad.id);

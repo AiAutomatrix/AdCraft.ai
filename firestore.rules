@@ -92,7 +92,7 @@ service cloud.firestore {
      * @param userId The UID of the parent user document.
      */
     function isUpdatingOwnAd(userId) {
-      return isExistingOwner(userId) && request.resource.data.userId == resource.data.id;
+      return isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
     }
 
 
