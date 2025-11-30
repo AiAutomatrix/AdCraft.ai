@@ -26,6 +26,23 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { motion } from 'framer-motion';
 import { useUser } from '@/firebase';
 
+function formatDate(timestamp: any): string {
+    if (!timestamp) return 'N/A';
+    // Firestore Timestamps have a toDate() method
+    if (timestamp.toDate) {
+      return timestamp.toDate().toLocaleDateString();
+    }
+    // Handle ISO strings
+    if (typeof timestamp === 'string') {
+      return new Date(timestamp).toLocaleDateString();
+    }
+    // Handle JavaScript Date objects
+    if (timestamp instanceof Date) {
+      return timestamp.toLocaleDateString();
+    }
+    return 'Invalid Date';
+  }
+
 export default function SavedAdsPage() {
   const { ads, deleteAd, loading } = useFirestoreAds();
   const { user, isUserLoading } = useUser();
@@ -39,9 +56,9 @@ export default function SavedAdsPage() {
   }, [user, isUserLoading, router]);
 
   const sortedAds = [...(ads || [])].sort((a, b) => {
-    // Handle both string and Firestore Timestamp for createdAt
-    const dateA = a.createdAt ? (typeof a.createdAt === 'string' ? new Date(a.createdAt) : (a.createdAt.toDate ? a.createdAt.toDate() : new Date())) : new Date(0);
-    const dateB = b.createdAt ? (typeof b.createdAt === 'string' ? new Date(b.createdAt) : (b.createdAt.toDate ? b.createdAt.toDate() : new Date())) : new Date(0);
+    const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
+    const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
+    if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) return 0;
     return dateB.getTime() - dateA.getTime();
   });
 
@@ -167,7 +184,7 @@ export default function SavedAdsPage() {
                   <Badge variant={ad.type === 'sale' ? 'default' : 'secondary'} className="capitalize flex-shrink-0">{ad.type}</Badge>
                 </div>
                 <CardDescription>
-                  Created on {ad.createdAt ? (typeof ad.createdAt === 'string' ? new Date(ad.createdAt) : (ad.createdAt.toDate ? ad.createdAt.toDate().toLocaleDateString() : 'N/A')) : 'N/A'}
+                  Created on {formatDate(ad.createdAt)}
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-grow">
