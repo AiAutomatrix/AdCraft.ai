@@ -28,7 +28,7 @@ export function useFirebaseStorage() {
         throw new Error('Invalid image data URI.');
     }
       
-    const fileExtension = imageUri.substring(imageUri.indexOf('/') + 1, imageUri.indexOf(';'));
+    const fileExtension = imageUri.substring(imageUri.indexOf('/') + 1, imageUri.indexOf(';base64'));
     const storageRef = ref(storage, `image/${imageId}.${fileExtension}`);
     
     await uploadString(storageRef, imageUri, 'data_url');
@@ -44,12 +44,13 @@ export function useFirebaseStorage() {
   const deleteImage = async (imageId: string) => {
     if (!user) throw new Error('User must be logged in to delete an image.');
 
-    const extensions = ['png', 'jpg', 'jpeg', 'webp'];
+    const extensions = ['png', 'jpg', 'jpeg', 'webp', 'gif'];
     let deleted = false;
 
     for (const ext of extensions) {
         try {
             const storageRef = ref(storage, `image/${imageId}.${ext}`);
+            await getDownloadURL(storageRef); // Check if file exists before trying to delete
             await deleteObject(storageRef);
             deleted = true;
             break; // Exit loop once deleted
