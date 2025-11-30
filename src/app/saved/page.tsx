@@ -25,9 +25,11 @@ import { useEffect } from 'react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { motion } from 'framer-motion';
 import { useUser } from '@/firebase';
+import { useFirebaseStorage } from '@/hooks/use-firebase-storage';
 
 export default function SavedAdsPage() {
   const { ads, deleteAd, loading } = useFirestoreAds();
+  const { deleteImage } = useFirebaseStorage();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   const { toast } = useToast();
@@ -44,8 +46,13 @@ export default function SavedAdsPage() {
     return dateB.getTime() - dateA.getTime();
   });
 
-  const handleDelete = (adId: string) => {
-    deleteAd(adId);
+  const handleDelete = async (adId: string) => {
+    try {
+        await deleteImage(adId);
+      } catch (error) {
+        console.warn(`Could not delete image for ad ${adId}. It may not exist.`, error);
+      }
+      await deleteAd(adId);
     toast({ title: "Ad Deleted", description: "The ad has been successfully removed.", variant: "destructive" });
   };
 
@@ -152,14 +159,7 @@ export default function SavedAdsPage() {
           >
             <Card className="flex flex-col overflow-hidden h-full bg-surface-2 border-border/50 transition-all duration-300 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1">
               <div className="aspect-video bg-surface-1 flex items-center justify-center relative">
-                  {ad.images && ad.images.length > 0 ? (
-                      <Image 
-                        src={ad.images[0]} 
-                        alt={ad.title} 
-                        fill 
-                        className="object-cover"
-                      />
-                  ) : ad.type === 'sale' ? (
+                  {ad.type === 'sale' ? (
                       <Car className="w-16 h-16 text-text-secondary opacity-50" />
                   ) : (
                       <Search className="w-16 h-16 text-text-secondary opacity-50" />
@@ -207,7 +207,7 @@ export default function SavedAdsPage() {
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete this ad and its associated images.
+                                This action cannot be undone. This will permanently delete this ad.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>

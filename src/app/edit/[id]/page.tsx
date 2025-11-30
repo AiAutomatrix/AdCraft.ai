@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -15,12 +15,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useFirestoreAds } from '@/hooks/use-firestore-ads';
+import { useFirebaseStorage } from '@/hooks/use-firebase-storage';
 import { useToast } from '@/hooks/use-toast';
 import type { Ad } from '@/lib/types';
 import { suggestAdImprovementsAction, generateAdTitleAction } from '@/lib/actions';
 import { useUser } from '@/firebase';
 
-import { ArrowLeft, Copy, Loader2, Save, Sparkles, Trash2, Wand2, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Copy, Loader2, Save, Sparkles, Trash2, Wand2, RefreshCw, Upload, X } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,6 +58,8 @@ export default function EditAdPage() {
   const { toast } = useToast();
 
   const { getAd, setAd, deleteAd, loading: adsLoading } = useFirestoreAds();
+  const { uploadImage, deleteImage } = useFirebaseStorage();
+
   const { user, isUserLoading } = useUser();
   const [ad, setLocalAd] = useState<Ad | null>(null);
   const [isNew, setIsNew] = useState(id === 'new');
@@ -66,6 +69,9 @@ export default function EditAdPage() {
   const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [initialDataLoaded, setInitialDataLoaded] = useState(false);
+  const [imageFile, setImageFile] = useState<string | null>(null); // Holds data URI
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
 
   const form = useForm<AdFormData>({
     resolver: zodResolver(adSchema),
@@ -93,6 +99,10 @@ export default function EditAdPage() {
           };
           setLocalAd(adData);
           form.reset({ title: adData.title, content: adData.content });
+          if(parsedData.images && parsedData.images[0]) {
+            setImageFile(parsedData.images[0]);
+          }
+
         } catch (e) {
           console.error("Failed to parse ad data from session storage", e);
           toast({ title: 'Error loading ad data', variant: 'destructive' });
@@ -109,6 +119,8 @@ export default function EditAdPage() {
         if (adData) {
           setLocalAd(adData);
           form.reset({ title: adData.title, content: adData.content });
+          // Note: Images are not stored in firestore, so we don't load them here.
+          // This component will only manage images for NEW ads.
         } else {
           toast({ title: 'Ad not found', variant: 'destructive' });
           router.replace('/saved');
@@ -122,23 +134,30 @@ export default function EditAdPage() {
   const onSubmit = async (data: AdFormData) => {
     setIsSaving(true);
     const newId = isNew ? uuidv4() : id;
-    const adToSave: Ad = {
-      id: newId,
-      type: ad?.type || 'wanted',
-      images: ad?.images || [],
-      createdAt: ad?.createdAt || null, // Keep original creation date
-      title: data.title,
-      content: data.content,
-    };
     
     try {
+      // Step 1: Upload image if one is present
+      if (imageFile && imageFile.startsWith('data:image')) {
+        await uploadImage(imageFile, newId);
+        toast({ title: 'Image Uploaded!', description: 'Your image has been saved to storage.' });
+      }
+
+      // Step 2: Save text data to Firestore
+      const adToSave: Ad = {
+        id: newId,
+        type: ad?.type || 'sale',
+        createdAt: ad?.createdAt || null,
+        title: data.title,
+        content: data.content,
+      };
+      
       const savedAd = await setAd(adToSave);
       setLocalAd(savedAd);
 
       if (isNew) {
           sessionStorage.removeItem('generatedAd_new');
       }
-      toast({ title: 'Ad Saved!', description: 'Your ad has been successfully saved.' });
+      toast({ title: 'Ad Saved!', description: 'Your ad text has been successfully saved.' });
       
       if (isNew) {
         router.replace(`/edit/${newId}`, { scroll: false });
@@ -152,8 +171,34 @@ export default function EditAdPage() {
     }
   };
 
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImageFile(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setImageFile(null);
+    if(fileInputRef.current) {
+        fileInputRef.current.value = '';
+    }
+  }
+
   const handleDelete = async () => {
     if (ad && !isNew) {
+      // Note: We can attempt to delete the image from storage if we know its ID.
+      // Since we don't store image URLs with the ad, we'll delete the ad doc.
+      // A more robust system might involve a cloud function to clean up orphaned images.
+      try {
+        await deleteImage(ad.id); // Attempt to delete image with same ID as ad
+      } catch (error) {
+        console.warn("Could not delete image from storage, it might not exist.", error);
+      }
       await deleteAd(ad.id);
       toast({ title: 'Ad Deleted', variant: 'destructive' });
       router.push('/saved');
@@ -177,7 +222,7 @@ export default function EditAdPage() {
     const currentValues = form.getValues();
     const result = await suggestAdImprovementsAction({
         adCopy: currentValues.content,
-        adType: ad?.type || 'wanted',
+        adType: ad?.type || 'sale',
     });
 
     if (result.error) {
@@ -193,7 +238,7 @@ export default function EditAdPage() {
     const currentValues = form.getValues();
     const result = await generateAdTitleAction({
         adContent: currentValues.content,
-        adType: ad?.type || 'wanted',
+        adType: ad?.type || 'sale',
     });
 
     if (result.error) {
@@ -217,8 +262,7 @@ export default function EditAdPage() {
   }
   
   const adContent = form.watch('content');
-  const adType = ad?.type || 'wanted';
-  const primaryImage = ad?.images?.[0];
+  const adType = ad?.type || 'sale';
 
   return (
     <div className="container py-12 max-w-6xl">
@@ -231,20 +275,47 @@ export default function EditAdPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle className="font-headline text-2xl">Vehicle Image</CardTitle>
+                        <CardDescription>Upload an image for AI analysis (optional). It is not saved with the ad.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        {primaryImage ? (
-                             <Image
-                                src={primaryImage}
-                                alt={ad.title}
+                        <input
+                            type="file"
+                            accept="image/*"
+                            ref={fileInputRef}
+                            onChange={handleFileChange}
+                            className="hidden"
+                            disabled={isSaving}
+                        />
+                        {imageFile ? (
+                            <div className="relative group">
+                                <Image
+                                src={imageFile}
+                                alt="Vehicle preview"
                                 width={600}
                                 height={400}
                                 className="rounded-lg object-cover w-full aspect-video"
-                            />
-                        ) : (
-                            <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
-                                <p className="text-muted-foreground">No image provided</p>
+                                />
+                                <Button 
+                                    variant="destructive" 
+                                    size="icon" 
+                                    className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={removeImage}
+                                    disabled={isSaving}
+                                >
+                                    <X className="h-4 w-4" />
+                                </Button>
                             </div>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={isSaving || !isNew}
+                                className="w-full h-64 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center text-muted-foreground hover:bg-muted/50 hover:border-primary transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                <Upload className="h-10 w-10 mb-2" />
+                                <span>Click to upload a photo</span>
+                                <span className="text-sm">Only for new ads</span>
+                            </button>
                         )}
                     </CardContent>
                 </Card>
@@ -320,7 +391,7 @@ export default function EditAdPage() {
                         <AlertDialogContent>
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                <AlertDialogDescription>This action cannot be undone. This will permanently delete this ad and its images.</AlertDialogDescription>
+                                <AlertDialogDescription>This action cannot be undone. This will permanently delete this ad.</AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>

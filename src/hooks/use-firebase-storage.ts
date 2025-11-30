@@ -9,48 +9,60 @@ import {
   deleteObject,
 } from 'firebase/storage';
 import { useFirebaseApp, useUser } from '@/firebase';
-import { v4 as uuidv4 } from 'uuid';
 
 export function useFirebaseStorage() {
   const firebaseApp = useFirebaseApp();
   const storage = useMemo(() => getStorage(firebaseApp), [firebaseApp]);
   const { user } = useUser();
 
-  const uploadImages = async (imageUris: string[]): Promise<string[]> => {
+  /**
+   * Uploads a single image data URI to Firebase Storage.
+   * @param imageUri The data URI of the image to upload.
+   * @param imageId The unique ID to use for the stored image file.
+   * @returns The public download URL of the uploaded image.
+   */
+  const uploadImage = async (imageUri: string, imageId: string): Promise<string> => {
     if (!user) throw new Error('User must be logged in to upload images.');
     
-    const uploadPromises = imageUris.map(async (uri) => {
-      // If the uri is already a Firebase Storage URL, don't re-upload it.
-      if (uri.startsWith('https://firebasestorage.googleapis.com')) {
-        return uri;
-      }
+    if (!imageUri.startsWith('data:image')) {
+        throw new Error('Invalid image data URI.');
+    }
       
-      // Assumes URI is a data URI (e.g., from a file input)
-      if (uri.startsWith('data:image')) {
-        const fileExtension = uri.substring(uri.indexOf('/') + 1, uri.indexOf(';'));
-        const imageId = uuidv4();
-        const storageRef = ref(storage, `users/${user.uid}/images/${imageId}.${fileExtension}`);
-        
-        await uploadString(storageRef, uri, 'data_url');
-        const downloadURL = await getDownloadURL(storageRef);
-        return downloadURL;
-      }
-      
-      // If it's not a storage URL or a data URI, return it as is (might be a placeholder)
-      return uri;
-    });
+    const fileExtension = imageUri.substring(imageUri.indexOf('/') + 1, imageUri.indexOf(';'));
+    const storageRef = ref(storage, `users/${user.uid}/images/${imageId}.${fileExtension}`);
     
-    return Promise.all(uploadPromises);
+    await uploadString(storageRef, imageUri, 'data_url');
+    const downloadURL = await getDownloadURL(storageRef);
+    return downloadURL;
   };
   
-  const deleteImage = async (imageUrl: string) => {
-    if (!imageUrl.startsWith('https://firebasestorage.googleapis.com')) {
-      // Don't try to delete non-storage images (like placeholders)
-      return;
+  /**
+   * Deletes an image from Firebase Storage using its ID.
+   * It tries to delete common image formats (.png, .jpg, .jpeg, .webp).
+   * @param imageId The unique ID of the image to delete.
+   */
+  const deleteImage = async (imageId: string) => {
+    if (!user) throw new Error('User must be logged in to delete an image.');
+
+    const extensions = ['png', 'jpg', 'jpeg', 'webp'];
+    let deleted = false;
+
+    for (const ext of extensions) {
+        try {
+            const storageRef = ref(storage, `users/${user.uid}/images/${imageId}.${ext}`);
+            await deleteObject(storageRef);
+            deleted = true;
+            break; // Exit loop once deleted
+        } catch (error: any) {
+            if (error.code !== 'storage/object-not-found') {
+               console.error(`Failed to delete image ${imageId}.${ext}:`, error);
+            }
+        }
     }
-    const imageRef = ref(storage, imageUrl);
-    await deleteObject(imageRef);
+    if(!deleted) {
+        console.warn(`Image with ID ${imageId} not found in storage with any common extension.`);
+    }
   };
 
-  return { uploadImages, deleteImage, storage };
+  return { uploadImage, deleteImage, storage };
 }
