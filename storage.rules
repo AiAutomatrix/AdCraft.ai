@@ -2,13 +2,10 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // By default, allow public read access to all files.
-    // This is common for files like images that need to be displayed publicly.
+    // WARNING: This is insecure and for debugging purposes only.
+    // It allows anyone to read from and write to your storage bucket.
     match /{allPaths=**} {
-      allow read;
-      // Restrict write access to authenticated users only.
-      // This prevents unauthorized users from uploading or deleting files.
-      allow write: if request.auth != null;
+      allow read, write: if true;
     }
   }
 }
