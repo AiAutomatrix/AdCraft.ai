@@ -15,7 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useFirestoreAds } from '@/hooks/use-firestore-ads';
-import { useFirebaseStorage } from '@/hooks/use-firebase-storage';
+// import { useFirebaseStorage } from '@/hooks/use-firebase-storage';
 import { useToast } from '@/hooks/use-toast';
 import type { Ad } from '@/lib/types';
 import { suggestAdImprovementsAction, generateAdTitleAction } from '@/lib/actions';
@@ -58,7 +58,7 @@ export default function EditAdPage() {
   const { toast } = useToast();
 
   const { getAd, setAd, deleteAd, loading: adsLoading } = useFirestoreAds();
-  const { uploadImage, deleteImage } = useFirebaseStorage();
+  // const { uploadImage, deleteImage } = useFirebaseStorage();
 
   const { user, isUserLoading } = useUser();
   const [ad, setLocalAd] = useState<Ad | null>(null);
@@ -119,8 +119,6 @@ export default function EditAdPage() {
         if (adData) {
           setLocalAd(adData);
           form.reset({ title: adData.title, content: adData.content });
-          // Note: Images are not stored in firestore, so we don't load them here.
-          // This component will only manage images for NEW ads.
         } else {
           toast({ title: 'Ad not found', variant: 'destructive' });
           router.replace('/saved');
@@ -136,11 +134,11 @@ export default function EditAdPage() {
     const newId = isNew ? uuidv4() : id;
     
     try {
-      // Step 1: Upload image if one is present
-      if (imageFile && imageFile.startsWith('data:image')) {
-        await uploadImage(imageFile, newId);
-        toast({ title: 'Image Uploaded!', description: 'Your image has been saved to storage.' });
-      }
+      // Step 1: Upload image (COMMENTED OUT)
+      // if (imageFile && imageFile.startsWith('data:image')) {
+      //   await uploadImage(imageFile, newId);
+      //   toast({ title: 'Image Uploaded!', description: 'Your image has been saved to storage.' });
+      // }
 
       // Step 2: Save text data to Firestore
       const adToSave: Ad = {
@@ -191,14 +189,11 @@ export default function EditAdPage() {
 
   const handleDelete = async () => {
     if (ad && !isNew) {
-      // Note: We can attempt to delete the image from storage if we know its ID.
-      // Since we don't store image URLs with the ad, we'll delete the ad doc.
-      // A more robust system might involve a cloud function to clean up orphaned images.
-      try {
-        await deleteImage(ad.id); // Attempt to delete image with same ID as ad
-      } catch (error) {
-        console.warn("Could not delete image from storage, it might not exist.", error);
-      }
+      // try {
+      //   await deleteImage(ad.id); // Attempt to delete image with same ID as ad
+      // } catch (error) {
+      //   console.warn("Could not delete image from storage, it might not exist.", error);
+      // }
       await deleteAd(ad.id);
       toast({ title: 'Ad Deleted', variant: 'destructive' });
       router.push('/saved');
@@ -272,7 +267,7 @@ export default function EditAdPage() {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             <div className="grid md:grid-cols-2 gap-8">
-                <Card>
+                {/* <Card>
                     <CardHeader>
                         <CardTitle className="font-headline text-2xl">Vehicle Image</CardTitle>
                         <CardDescription>Upload an image for AI analysis (optional). It is not saved with the ad.</CardDescription>
@@ -318,8 +313,8 @@ export default function EditAdPage() {
                             </button>
                         )}
                     </CardContent>
-                </Card>
-                <Card>
+                </Card> */}
+                <Card className="md:col-span-2">
                     <CardHeader>
                         <div className="flex justify-between items-start">
                             <div>
@@ -452,3 +447,5 @@ export default function EditAdPage() {
     </div>
   );
 }
+
+    
