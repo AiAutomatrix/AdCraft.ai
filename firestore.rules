@@ -1,24 +1,34 @@
 
 rules_version = '2';
 
-service firebase.storage {
-  match /b/{bucket}/o {
-    // Helper function to check ownership
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check ownership based on UID
     function isOwner(userId) {
       return request.auth != null && request.auth.uid == userId;
     }
 
-    // Match any file path
-    match /{allPaths=**} {
-      // Deny all reads and writes by default
-      allow read, write: if false;
+    // Helper function to validate ad creation
+    function isCreatingAdForSelf(userId) {
+      return isOwner(userId) && request.resource.data.userId == userId;
     }
 
-    // Allow users to read and write only within their own user folder.
-    // e.g., /users/USER_ID/ad_images/IMAGE_NAME.jpg
-    match /users/{userId}/{allPaths=**} {
-      allow read: if true; // Allow public reads for displaying images
-      allow write: if isOwner(userId);
+    // Rules for the 'users' collection
+    match /users/{userId} {
+      // Users can only read and write their own user document
+      allow read, update, delete: if isOwner(userId);
+      // Anyone can create a user document (on signup)
+      allow create: if request.auth != null;
+
+      // Rules for the 'ads' subcollection within a user's document
+      match /ads/{adId} {
+        // Allow a user to list their own ads.
+        allow list: if isOwner(userId);
+        // Allow read, update, delete on individual ads only if the user is the owner.
+        allow read, update, delete: if isOwner(userId);
+        // Allow creating an ad if the ad data belongs to the user.
+        allow create: if isCreatingAdForSelf(userId);
+      }
     }
   }
 }
