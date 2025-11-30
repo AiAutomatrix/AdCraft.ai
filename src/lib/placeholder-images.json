@@ -20,14 +20,14 @@
     },
     {
       "id": "hero-service-offer",
-      "description": "A professional painter neatly painting a wall with a roller.",
-      "imageUrl": "https://images.unsplash.com/photo-1607590843469-7d4b4d4a4e37?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxjYXIlMjB3YXNoJTIwc2VydmljZXxlbnwwfHx8fDE3NjQ1MzQyNjJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "car wash service"
+      "description": "A tow truck assisting a vehicle on the side of a road.",
+      "imageUrl": "https://images.unsplash.com/photo-1615825313939-158852a381a4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHx0b3clMjB0cnVja3xlbnwwfHx8fDE3NjQ1Mzg1ODd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "tow truck"
     },
     {
       "id": "classic-car",
       "description": "A vintage red convertible from the 1960s.",
-      "imageUrl": "https://images.unsplash.com/photo-1651463940891-75df0100f73c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxyZWQlMjBjbGFzc2ljJTIwY2FyfGVufDB8fHx8MTc2NDQ1NzAwOHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1651463940891-75df0100f73c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxyZWQlMjBjbGFzc2ljJTIwY2FyfGVufDB8fHx8fDE3NjQ0NTcwMDh8MA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "red classic car"
     },
     {
