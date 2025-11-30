@@ -9,76 +9,35 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { useFirebaseStorage } from '@/hooks/use-firebase-storage';
 import { generateAdFromImageAction } from '@/lib/actions';
-import { Loader2, Wand2, Upload, X, CheckCircle } from 'lucide-react';
+import { Loader2, Wand2, Upload, X } from 'lucide-react';
 import Image from 'next/image';
 import { useUser } from '@/firebase';
 
 export default function GenerateSaleAdPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
   const { uploadImage } = useFirebaseStorage();
-  const { user } = useUser();
+  const { user, isUserLoading } = useUser();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (!user) {
-        toast({
-            title: 'Authentication Required',
-            description: 'You must be logged in to upload an image.',
-            variant: 'destructive',
-        });
-        return;
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const result = reader.result as string;
-      setImagePreview(result);
-      uploadImmediately(result);
-    };
-    reader.readAsDataURL(file);
   };
-  
-  const uploadImmediately = async (dataUri: string) => {
-    setIsUploading(true);
-    setUploadedImageUrl(null);
-    console.log("Starting immediate image upload...");
-
-    try {
-        const newAdId = uuidv4(); // Generate a temporary ID for the image name
-        const imageUrl = await uploadImage(dataUri, newAdId);
-        setUploadedImageUrl(imageUrl);
-        console.log("Image upload successful. URL:", imageUrl);
-        toast({
-            title: 'Upload Complete',
-            description: 'Your image has been successfully uploaded to storage.',
-        });
-    } catch (error) {
-        console.error('Immediate image upload failed:', error);
-        toast({
-            title: 'Upload Failed',
-            description: 'Could not upload image. Please try again.',
-            variant: 'destructive',
-        });
-        clearImage(); // Clear preview on failure
-    } finally {
-        setIsUploading(false);
-    }
-  }
-
 
   const handleGenerate = async () => {
-    if (!imagePreview || !uploadedImageUrl) {
+    if (!imagePreview) {
       toast({
-        title: 'Image not ready',
-        description: 'Please wait for the image to upload or select an image.',
+        title: 'No image selected',
+        description: 'Please select an image to generate an ad.',
         variant: 'destructive',
       });
       return;
@@ -97,8 +56,13 @@ export default function GenerateSaleAdPage() {
     const newAdId = uuidv4();
 
     try {
-      // The image is already uploaded. We use the preview for AI analysis
-      // and the uploaded URL for saving.
+      // 1. Upload the image first
+      console.log('Starting image upload...');
+      const imageUrl = await uploadImage(imagePreview, newAdId);
+      console.log('Image upload successful. URL:', imageUrl);
+
+      // 2. Generate the ad using the data URI (for AI)
+      console.log('Generating ad from image...');
       const result = await generateAdFromImageAction({
         photoDataUri: imagePreview,
         adType: 'sell',
@@ -107,23 +71,25 @@ export default function GenerateSaleAdPage() {
       if (result.error) {
         throw new Error(result.error);
       }
-      
+      console.log('Ad generation successful.');
+
+      // 3. Pass all data to the editor page
       sessionStorage.setItem('generatedAd_new', JSON.stringify({
         id: newAdId,
         title: result.title,
         content: result.adText,
         type: 'sale',
-        images: [uploadedImageUrl], // Pass the final Storage URL
+        images: [imageUrl], // Pass the final Firebase Storage URL
       }));
       router.push(`/edit/${newAdId}`);
 
     } catch (error) {
-        console.error('An error occurred during ad generation:', error);
-        toast({
-            title: 'Generation Failed',
-            description: (error as Error).message || 'Could not generate ad. Please try again.',
-            variant: 'destructive',
-        });
+      console.error('An error occurred during ad generation:', error);
+      toast({
+        title: 'Generation Failed',
+        description: (error as Error).message || 'Could not generate ad. Please try again.',
+        variant: 'destructive',
+      });
     } finally {
       setIsGenerating(false);
     }
@@ -131,14 +97,12 @@ export default function GenerateSaleAdPage() {
   
   const clearImage = () => {
     setImagePreview(null);
-    setUploadedImageUrl(null);
-    setIsUploading(false);
     if(fileInputRef.current) {
         fileInputRef.current.value = '';
     }
   }
 
-  const isButtonDisabled = isGenerating || isUploading || !imagePreview || !uploadedImageUrl;
+  const isButtonDisabled = isGenerating || isUserLoading || !imagePreview;
 
   return (
     <div className="container py-12">
@@ -155,7 +119,7 @@ export default function GenerateSaleAdPage() {
               ref={fileInputRef}
               onChange={handleFileChange}
               className="hidden"
-              disabled={isUploading || isGenerating}
+              disabled={isGenerating}
             />
             {imagePreview ? (
               <div className="relative group">
@@ -171,27 +135,15 @@ export default function GenerateSaleAdPage() {
                     size="icon" 
                     className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
                     onClick={clearImage}
-                    disabled={isUploading || isGenerating}
+                    disabled={isGenerating}
                 >
                     <X className="h-4 w-4" />
                 </Button>
-                {isUploading && (
-                    <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center rounded-lg">
-                        <Loader2 className="h-8 w-8 animate-spin text-white" />
-                        <p className="text-white mt-2">Uploading...</p>
-                    </div>
-                )}
-                {uploadedImageUrl && !isUploading && (
-                     <div className="absolute top-2 left-2 bg-green-500/80 text-white text-xs font-bold py-1 px-2 rounded-full flex items-center gap-1">
-                        <CheckCircle className="h-4 w-4" />
-                        <span>Uploaded</span>
-                    </div>
-                )}
               </div>
             ) : (
               <button
                 onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading || isGenerating}
+                disabled={isGenerating || isUserLoading}
                 className="w-full h-64 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center text-muted-foreground hover:bg-muted/50 hover:border-primary transition-colors"
               >
                 <Upload className="h-10 w-10 mb-2" />
@@ -206,7 +158,7 @@ export default function GenerateSaleAdPage() {
             ) : (
               <Wand2 className="mr-2 h-5 w-5" />
             )}
-            Generate Ad
+            {isGenerating ? 'Uploading & Generating...' : 'Generate Ad'}
           </Button>
         </CardContent>
       </Card>
