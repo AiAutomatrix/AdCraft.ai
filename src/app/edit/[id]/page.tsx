@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -13,10 +13,11 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { useLocalStorage } from '@/hooks/use-local-storage';
+import { useAdStorage } from '@/hooks/use-local-storage';
 import { useToast } from '@/hooks/use-toast';
 import type { Ad } from '@/lib/types';
 import { suggestAdImprovementsAction, generateAdTitleAction } from '@/lib/actions';
+import { useUser } from '@/firebase';
 
 import { ArrowLeft, Copy, Loader2, Save, Sparkles, Trash2, Wand2, Upload, X, RefreshCw } from 'lucide-react';
 import {
@@ -58,15 +59,16 @@ export default function EditAdPage() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [ads, setAds] = useLocalStorage<Ad[]>('saved-ads', []);
+  const { ads, setAd, deleteAd, loading: adsLoading } = useAdStorage();
+  const { user, loading: userLoading } = useUser();
   const [ad, setAd] = useState<Ad | null>(null);
   const [isNew, setIsNew] = useState(id === 'new');
-  const [initialAdDataLoaded, setInitialAdDataLoaded] = useState(false);
-
+  
   const [aiSuggestions, setAiSuggestions] = useState<AISuggestions | null>(null);
   const [isImproving, setIsImproving] = useState(false);
   const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [initialDataLoaded, setInitialDataLoaded] = useState(false);
 
   const form = useForm<AdFormData>({
     resolver: zodResolver(adSchema),
@@ -74,14 +76,17 @@ export default function EditAdPage() {
   });
 
   useEffect(() => {
+    if (adsLoading || userLoading) return;
+
     let adData: Ad | null = null;
+
     if (isNew) {
       const newAdData = sessionStorage.getItem('generatedAd_new');
       if (newAdData) {
         try {
           const parsedData = JSON.parse(newAdData);
           adData = {
-            id: 'new',
+            id: 'new', // Temporary ID
             createdAt: new Date().toISOString(),
             ...parsedData,
           };
@@ -90,32 +95,33 @@ export default function EditAdPage() {
           toast({ title: 'Error loading ad data', variant: 'destructive' });
           router.replace('/create');
         }
-      } else if (!initialAdDataLoaded) {
-        // Only redirect if it's the initial load and there's no data
-        // This prevents redirection on hot-reloads in dev
+      } else if (!initialDataLoaded) {
         toast({ title: 'No ad data found', description: 'Please create an ad first.', variant: 'destructive' });
         router.replace('/create');
         return;
       }
     } else {
-      adData = ads.find(a => a.id === id) || null;
+      if (ads) {
+        adData = ads.find(a => a.id === id) || null;
+      }
     }
 
     if (adData) {
       setAd(adData);
       form.reset({ title: adData.title, content: adData.content, images: adData.images || [] });
-    } else if (!isNew) {
+    } else if (!isNew && !adsLoading) {
       toast({ title: 'Ad not found', variant: 'destructive' });
       router.replace('/saved');
     }
-    setInitialAdDataLoaded(true);
+    setInitialDataLoaded(true);
 
-  }, [id, isNew, form, router, toast, ads, initialAdDataLoaded]);
+  }, [id, isNew, form, router, toast, ads, adsLoading, userLoading, initialDataLoaded]);
 
-  const onSubmit = (data: AdFormData) => {
+  const onSubmit = async (data: AdFormData) => {
     setIsSaving(true);
-    const newAd: Ad = {
-      id: isNew ? uuidv4() : id,
+    const newId = isNew ? uuidv4() : id;
+    const adToSave: Ad = {
+      id: newId,
       type: ad?.type || 'sale',
       createdAt: ad?.createdAt || new Date().toISOString(),
       title: data.title,
@@ -123,18 +129,22 @@ export default function EditAdPage() {
       images: data.images,
     };
     
-    setAds(isNew ? [...ads, newAd] : ads.map(a => (a.id === id ? newAd : a)));
+    await setAd(adToSave);
+
     if (isNew) {
         sessionStorage.removeItem('generatedAd_new');
     }
     toast({ title: 'Ad Saved!', description: 'Your ad has been successfully saved.' });
-    router.push(`/edit/${newAd.id}`);
-    setIsNew(false);
+    
+    if (isNew) {
+      router.replace(`/edit/${newId}`, { scroll: false });
+      setIsNew(false);
+    }
     setIsSaving(false);
   };
 
-  const handleDelete = () => {
-    setAds(ads.filter(a => a.id !== id));
+  const handleDelete = async () => {
+    await deleteAd(id);
     toast({ title: 'Ad Deleted', variant: 'destructive' });
     router.push('/saved');
   };
@@ -146,10 +156,9 @@ export default function EditAdPage() {
       toast({ title: 'Copied to Clipboard!' });
     } catch (err) {
       console.error('Failed to copy text using navigator: ', err);
-      // Fallback for older browsers or insecure contexts
       const textArea = document.createElement("textarea");
       textArea.value = content;
-      textArea.style.position = "fixed"; // Avoid scrolling to bottom
+      textArea.style.position = "fixed";
       document.body.appendChild(textArea);
       textArea.focus();
       textArea.select();
@@ -170,8 +179,8 @@ export default function EditAdPage() {
     const currentValues = form.getValues();
     const result = await suggestAdImprovementsAction({
         adCopy: currentValues.content,
-        vehicleDescription: '', // Can be enhanced later
-        adType: ad?.type || 'sale',
+        vehicleDescription: '',
+        adType: ad?.type === 'wanted' ? 'wanted' : 'sale',
         images: currentValues.images
     });
 
@@ -233,7 +242,7 @@ export default function EditAdPage() {
     form.setValue('images', updatedImages);
   };
 
-  if (!initialAdDataLoaded || !ad) {
+  if (!initialDataLoaded || !ad) {
     return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
   

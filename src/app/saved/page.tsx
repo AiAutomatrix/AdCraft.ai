@@ -1,7 +1,7 @@
 'use client';
 
 import { Ad } from '@/lib/types';
-import { useLocalStorage } from '@/hooks/use-local-storage';
+import { useAdStorage } from '@/hooks/use-local-storage';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,21 +24,28 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { motion } from 'framer-motion';
+import { useUser } from '@/firebase';
 
 export default function SavedAdsPage() {
-  const [ads, setAds] = useLocalStorage<Ad[]>('saved-ads', []);
+  const { ads, deleteAd, loading } = useAdStorage();
+  const { user, loading: userLoading } = useUser();
   const router = useRouter();
   const { toast } = useToast();
-  const [isClient, setIsClient] = useState(false);
-
+  
   useEffect(() => {
-    setIsClient(true);
-  }, []);
+    if (!user && !userLoading) {
+      router.push('/login');
+    }
+  }, [user, userLoading, router]);
 
-  const sortedAds = [...ads].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const sortedAds = [...(ads || [])].sort((a, b) => {
+    const dateA = a.createdAt ? (typeof a.createdAt === 'string' ? new Date(a.createdAt) : a.createdAt.toDate()) : new Date(0);
+    const dateB = b.createdAt ? (typeof b.createdAt === 'string' ? new Date(b.createdAt) : b.createdAt.toDate()) : new Date(0);
+    return dateB.getTime() - dateA.getTime();
+  });
 
-  const deleteAd = (id: string) => {
-    setAds(ads.filter(ad => ad.id !== id));
+  const handleDelete = (id: string) => {
+    deleteAd(id);
     toast({ title: "Ad Deleted", description: "The ad has been successfully removed.", variant: "destructive" });
   };
 
@@ -56,17 +63,15 @@ export default function SavedAdsPage() {
         });
         toast({ title: "Shared successfully!" });
       } catch (error) {
-        // This can happen if the user cancels the share dialog
         console.log('Share was cancelled or failed', error);
       }
     } else {
-      // Fallback for desktop or unsupported browsers
       copyAd(ad.content);
       toast({ title: "Browser not supported", description: "Share feature not available. Ad content copied to clipboard instead." });
     }
   };
 
-  if (!isClient) {
+  if (loading || userLoading) {
     return (
         <div className="container max-w-screen-xl mx-auto px-4 md:px-8 py-12">
             <div className="flex justify-center items-center h-full">
@@ -76,7 +81,11 @@ export default function SavedAdsPage() {
     );
   }
 
-  if (ads.length === 0) {
+  if (!user) {
+    return null; // Redirecting
+  }
+
+  if (!ads || ads.length === 0) {
     return (
       <div className="container max-w-screen-xl mx-auto px-4 md:px-8 flex flex-1 items-center justify-center py-12 text-center">
         <motion.div
@@ -138,7 +147,7 @@ export default function SavedAdsPage() {
                   <Badge variant={ad.type === 'sale' ? 'default' : 'secondary'} className="capitalize flex-shrink-0">{ad.type}</Badge>
                 </div>
                 <CardDescription>
-                  Created on {new Date(ad.createdAt).toLocaleDateString()}
+                  Created on {ad.createdAt ? (typeof ad.createdAt === 'string' ? new Date(ad.createdAt) : ad.createdAt.toDate()).toLocaleDateString() : 'N/A'}
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-grow">
@@ -174,12 +183,12 @@ export default function SavedAdsPage() {
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete this ad from your local storage.
+                                This action cannot be undone. This will permanently delete this ad from your account.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => deleteAd(ad.id)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                                <AlertDialogAction onClick={() => handleDelete(ad.id)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
                             </AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>

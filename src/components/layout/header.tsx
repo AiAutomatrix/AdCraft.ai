@@ -7,6 +7,7 @@ import { Menu, Sparkles } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Logo } from '../icons';
+import { AuthButton } from './auth-button';
 
 const navLinks = [
   { href: '/create', label: 'Create Ad' },
@@ -95,8 +96,8 @@ export function Header() {
           <div className="w-full flex-1 md:w-auto md:flex-none">
             {/* Can add a search bar here later */}
           </div>
-          <nav className="hidden md:flex items-center">
-            {/* Can add user auth button here later */}
+          <nav className="flex items-center">
+            <AuthButton />
           </nav>
         </div>
       </div>

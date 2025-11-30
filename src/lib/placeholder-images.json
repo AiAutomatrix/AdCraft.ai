@@ -23,6 +23,12 @@
       "description": "A placeholder graphic showing a cloud upload icon and a car outline.",
       "imageUrl": "https://images.unsplash.com/photo-1624633022679-f790cc44a517?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxjYXIlMjBvdXRsaW5lfGVufDB8fHx8MTc2NDQ1NzAwOHww&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "car outline"
+    },
+    {
+      "id": "google-icon",
+      "description": "The Google 'G' logo.",
+      "imageUrl": "https://images.unsplash.com/photo-1529612700005-e35377bf1415?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxnb29nbGUlMjBsb2dvfGVufDB8fHx8MTc2NDUyNzIyOXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "google logo"
     }
   ]
 }
