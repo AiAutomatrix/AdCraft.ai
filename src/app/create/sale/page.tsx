@@ -10,31 +10,43 @@ import { generateAdFromImageAction } from '@/lib/actions';
 import { Loader2, Wand2, Upload, X } from 'lucide-react';
 import Image from 'next/image';
 import { useUser } from '@/firebase';
+import { processImage } from '@/lib/image-utils';
 
 export default function GenerateSaleAdPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
   const { user, isUserLoading } = useUser();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) { // 2MB limit
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit
         toast({
           title: 'Image too large',
-          description: 'Please select an image smaller than 2MB.',
+          description: 'Please select an image smaller than 10MB.',
           variant: 'destructive',
         });
         return;
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      
+      setIsProcessingImage(true);
+      try {
+        const processedImage = await processImage(file);
+        setImagePreview(processedImage);
+      } catch (error) {
+        console.error("Image processing failed:", error);
+        toast({
+            title: 'Image Processing Failed',
+            description: 'Could not process the selected image. Please try another one.',
+            variant: 'destructive',
+        });
+      } finally {
+        setIsProcessingImage(false);
+      }
     }
   };
 
@@ -71,7 +83,6 @@ export default function GenerateSaleAdPage() {
     const newAdId = uuidv4();
 
     try {
-      // 1. Generate the ad using the data URI (for AI)
       const result = await generateAdFromImageAction({
         photoDataUri: imagePreview,
         adType: 'sell',
@@ -81,13 +92,12 @@ export default function GenerateSaleAdPage() {
         throw new Error(result.error);
       }
 
-      // 2. Pass all data to the editor page via session storage
       sessionStorage.setItem('generatedAd_new', JSON.stringify({
         id: newAdId,
         title: result.title,
         content: result.adText,
         type: 'sale',
-        images: [imagePreview], // Pass the base64 data URI
+        images: [imagePreview],
       }));
       router.push(`/edit/${newAdId}`);
 
@@ -110,14 +120,15 @@ export default function GenerateSaleAdPage() {
     }
   }
 
-  const isButtonDisabled = isGenerating || !imagePreview;
+  const isButtonDisabled = isGenerating || !imagePreview || isProcessingImage;
+  const isUploaderDisabled = isGenerating || isProcessingImage || isUserLoading;
 
   return (
     <div className="container py-12">
       <Card className="max-w-2xl mx-auto">
         <CardHeader>
           <CardTitle className="font-headline text-3xl">Generate a 'For Sale' Ad from a Photo</CardTitle>
-          <CardDescription>Upload a picture of your vehicle. The image will be stored in your browser and our AI will write an ad for you.</CardDescription>
+          <CardDescription>Upload a picture of your vehicle. Large images will be automatically resized.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2">
@@ -127,7 +138,7 @@ export default function GenerateSaleAdPage() {
               ref={fileInputRef}
               onChange={handleFileChange}
               className="hidden"
-              disabled={isGenerating}
+              disabled={isUploaderDisabled}
             />
             {imagePreview ? (
               <div className="relative group">
@@ -149,15 +160,24 @@ export default function GenerateSaleAdPage() {
                 </Button>
               </div>
             ) : (
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isGenerating || isUserLoading}
-                className="w-full h-64 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center text-muted-foreground hover:bg-muted/50 hover:border-primary transition-colors"
-              >
-                <Upload className="h-10 w-10 mb-2" />
-                <span>Click to upload a photo</span>
-                <span className="text-sm">PNG, JPG, or WEBP (Max 2MB)</span>
-              </button>
+                <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploaderDisabled}
+                    className="w-full h-64 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center text-muted-foreground hover:bg-muted/50 hover:border-primary transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                    {isProcessingImage ? (
+                        <>
+                            <Loader2 className="h-10 w-10 mb-2 animate-spin" />
+                            <span>Processing Image...</span>
+                        </>
+                    ) : (
+                        <>
+                            <Upload className="h-10 w-10 mb-2" />
+                            <span>Click to upload a photo</span>
+                            <span className="text-sm">PNG, JPG, or WEBP (Max 10MB)</span>
+                        </>
+                    )}
+                </button>
             )}
           </div>
           <Button onClick={handleGenerate} disabled={isButtonDisabled} className="w-full font-semibold" size="lg">

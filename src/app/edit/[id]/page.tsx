@@ -19,6 +19,8 @@ import { useToast } from '@/hooks/use-toast';
 import type { Ad } from '@/lib/types';
 import { suggestAdImprovementsAction, generateAdTitleAction } from '@/lib/actions';
 import { useUser } from '@/firebase';
+import { processImage } from '@/lib/image-utils';
+
 
 import { ArrowLeft, Copy, Loader2, Save, Sparkles, Trash2, Wand2, RefreshCw, Upload, X, Search, Package, Briefcase, Car } from 'lucide-react';
 import {
@@ -67,6 +69,7 @@ export default function EditAdPage() {
   const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [initialDataLoaded, setInitialDataLoaded] = useState(false);
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -228,22 +231,32 @@ export default function EditAdPage() {
     }
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) { // 2MB limit
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit
         toast({
           title: 'Image too large',
-          description: 'Please select an image smaller than 2MB.',
+          description: 'Please select an image smaller than 10MB.',
           variant: 'destructive',
         });
         return;
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setLocalAd(prev => prev ? {...prev, images: [reader.result as string]} : null);
-      };
-      reader.readAsDataURL(file);
+      
+      setIsProcessingImage(true);
+      try {
+        const processedImage = await processImage(file);
+        setLocalAd(prev => prev ? {...prev, images: [processedImage]} : null);
+      } catch (error) {
+        console.error("Image processing failed:", error);
+        toast({
+            title: 'Image Processing Failed',
+            description: 'Could not process the selected image. Please try another one.',
+            variant: 'destructive',
+        });
+      } finally {
+        setIsProcessingImage(false);
+      }
     }
   };
 
@@ -277,7 +290,7 @@ export default function EditAdPage() {
                     <Card>
                         <CardHeader>
                             <CardTitle className="font-headline text-2xl">Image</CardTitle>
-                            <CardDescription>Upload an image for your ad.</CardDescription>
+                            <CardDescription>Upload an image for your ad. Large images are resized.</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <input
@@ -286,7 +299,7 @@ export default function EditAdPage() {
                                 ref={fileInputRef}
                                 onChange={handleFileChange}
                                 className="hidden"
-                                disabled={isSaving}
+                                disabled={isSaving || isProcessingImage}
                             />
                             {currentImage ? (
                                 <div className="relative group">
@@ -312,11 +325,20 @@ export default function EditAdPage() {
                                 <button
                                     type="button"
                                     onClick={() => fileInputRef.current?.click()}
-                                    disabled={isSaving}
+                                    disabled={isSaving || isProcessingImage}
                                     className="w-full h-64 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center text-muted-foreground hover:bg-muted/50 hover:border-primary transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                                 >
-                                    <Upload className="h-10 w-10 mb-2" />
-                                    <span>Click to upload a photo</span>
+                                    {isProcessingImage ? (
+                                        <>
+                                            <Loader2 className="h-10 w-10 mb-2 animate-spin" />
+                                            <span>Processing Image...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Upload className="h-10 w-10 mb-2" />
+                                            <span>Click to upload a photo</span>
+                                        </>
+                                    )}
                                 </button>
                             )}
                         </CardContent>
@@ -418,7 +440,7 @@ export default function EditAdPage() {
                  <Dialog onOpenChange={(open) => !open && setAiSuggestions(null)}>
                     <DialogTrigger asChild>
                         <Button type="button" variant="outline" onClick={handleImproveWithAI} className="bg-secondary/20 text-secondary-foreground border-secondary/30 hover:bg-secondary/30">
-                            {isImproving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+                            {isImproving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" /> }
                             Improve with AI
                         </Button>
                     </DialogTrigger>
