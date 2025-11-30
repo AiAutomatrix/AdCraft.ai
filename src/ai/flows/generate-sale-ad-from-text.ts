@@ -10,11 +10,11 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const GenerateSaleAdFromTextInputSchema = z.string().describe('A text description of the vehicle for sale.');
+const GenerateSaleAdFromTextInputSchema = z.string().describe('A text description of the vehicle for sale.');
 
 export type GenerateSaleAdFromTextInput = z.infer<typeof GenerateSaleAdFromTextInputSchema>;
 
-export const GenerateSaleAdFromTextOutputSchema = z.object({
+const GenerateSaleAdFromTextOutputSchema = z.object({
   title: z.string().describe('A compelling and descriptive title for the sale ad.'),
   adText: z.string().describe('The generated ad text, formatted in Markdown.'),
 });
