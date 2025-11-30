@@ -34,7 +34,8 @@ export default function SavedAdsPage() {
   
   useEffect(() => {
     if (!user && !isUserLoading) {
-      router.push('/login');
+      // Don't redirect immediately if we are just loading from local storage
+      // Only redirect if a user action requires authentication
     }
   }, [user, isUserLoading, router]);
 
@@ -44,8 +45,8 @@ export default function SavedAdsPage() {
     return dateB.getTime() - dateA.getTime();
   });
 
-  const handleDelete = (id: string) => {
-    deleteAd(id);
+  const handleDelete = (adOrId: Ad | string) => {
+    deleteAd(adOrId);
     toast({ title: "Ad Deleted", description: "The ad has been successfully removed.", variant: "destructive" });
   };
 
@@ -53,6 +54,20 @@ export default function SavedAdsPage() {
     navigator.clipboard.writeText(content);
     toast({ title: "Copied to Clipboard", description: "The ad content is ready to be pasted." });
   };
+
+  const handleEdit = (adId: string) => {
+    if (!user) {
+      toast({
+        title: 'Authentication Required',
+        description: 'Please log in to edit your saved ads.',
+        variant: 'destructive',
+      });
+      router.push('/login');
+    } else {
+      router.push(`/edit/${adId}`);
+    }
+  };
+
 
   const handleShare = async (ad: Ad) => {
     if (navigator.share) {
@@ -79,10 +94,6 @@ export default function SavedAdsPage() {
             </div>
         </div>
     );
-  }
-
-  if (!user) {
-    return null; // Redirecting
   }
 
   if (!ads || ads.length === 0) {
@@ -116,7 +127,7 @@ export default function SavedAdsPage() {
         <div className="flex justify-between items-center mb-8 md:mb-12">
             <div>
                 <h1 className="font-headline text-4xl font-bold tracking-tight sm:text-5xl">My Saved Ads</h1>
-                <p className="mt-2 text-text-secondary">Here are all the ads you've crafted.</p>
+                <p className="mt-2 text-text-secondary">{user ? "Here are all the ads you've crafted." : "Ads are saved locally. Log in to sync across devices."}</p>
             </div>
             <Button asChild className="font-semibold hidden sm:flex">
                 <Link href="/create">
@@ -154,7 +165,7 @@ export default function SavedAdsPage() {
                 <p className="text-sm text-text-secondary line-clamp-3">{ad.content}</p>
               </CardContent>
               <CardFooter className="flex gap-2 justify-end mt-auto pt-4 border-t border-border/50">
-                <Button variant="outline" size="sm" onClick={() => router.push(`/edit/${ad.id}`)}>
+                <Button variant="outline" size="sm" onClick={() => handleEdit(ad.id)}>
                     <Edit className="mr-2 h-4 w-4" /> Edit
                 </Button>
                  <Button variant="outline" size="sm" onClick={() => handleShare(ad)}>
@@ -183,7 +194,7 @@ export default function SavedAdsPage() {
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete this ad from your account.
+                                This action cannot be undone. This will permanently delete this ad.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>

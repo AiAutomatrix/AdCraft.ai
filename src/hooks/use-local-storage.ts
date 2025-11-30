@@ -130,11 +130,15 @@ export function useAdStorage() {
   );
   
   const deleteAd = useCallback(
-    async (ad: Ad) => {
+    async (ad: Ad | string) => {
+      const adId = typeof ad === 'string' ? ad : ad.id;
+      const adData = typeof ad === 'string' ? ads?.find(a => a.id === adId) : ad;
+
       if (user && firestore) {
+        if (!adData) return; // Can't delete if we don't have the ad data
         // Delete images from Storage first
-        if (ad.images && ad.images.length > 0) {
-          for (const imageUrl of ad.images) {
+        if (adData.images && adData.images.length > 0) {
+          for (const imageUrl of adData.images) {
             // Only try to delete if it's a Firebase Storage URL
             if (imageUrl.startsWith('https://firebasestorage.googleapis.com')) {
               try {
@@ -147,18 +151,20 @@ export function useAdStorage() {
           }
         }
         // Then delete the Firestore document
-        const adRef = doc(firestore, `users/${user.uid}/ads`, ad.id);
+        const adRef = doc(firestore, `users/${user.uid}/ads`, adId);
         deleteDocumentNonBlocking(adRef);
       } else {
+        // Local storage logic
         setLocalAds((prevAds) => {
-          const newAds = prevAds.filter((a) => a.id !== ad.id);
+          const newAds = prevAds.filter((a) => a.id !== adId);
           localStorage.setItem('saved-ads', JSON.stringify(newAds));
           return newAds;
         });
       }
     },
-    [user, firestore, deleteImage]
+    [user, firestore, deleteImage, ads] // added ads to dependency array
   );
+
 
   return { ads, setAd, deleteAd, loading, error: firestoreError };
 }
