@@ -15,14 +15,14 @@
     {
       "id": "hero-item-sell",
       "description": "A vintage camera sitting on a wooden table.",
-      "imageUrl": "https://images.unsplash.com/photo-1516733978393-27785532a2f0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHx2aW50YWdlJTIwY2FtZXJhfGVufDB8fHx8MTc2NDQ1NzAwOHww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "vintage camera sale"
+      "imageUrl": "https://images.unsplash.com/photo-1550291652-6ea9114a47b1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxndWl0YXJ8ZW58MHx8fHwxNzY0NTM0MjYyfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "guitar sale"
     },
     {
       "id": "hero-service-offer",
       "description": "A professional painter neatly painting a wall with a roller.",
-      "imageUrl": "https://images.unsplash.com/photo-1596495764348-31633595484c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxwYWludGluZyUyMHdhbGx8ZW58MHx8fHwxNzY0NDU3MDA4fDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "painting service"
+      "imageUrl": "https://images.unsplash.com/photo-1607590843469-7d4b4d4a4e37?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxjYXIlMjB3YXNoJTIwc2VydmljZXxlbnwwfHx8fDE3NjQ1MzQyNjJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "car wash service"
     },
     {
       "id": "classic-car",
@@ -39,13 +39,13 @@
     {
       "id": "upload-placeholder",
       "description": "A placeholder graphic showing a cloud upload icon and a car outline.",
-      "imageUrl": "https://images.unsplash.com/photo-1624633022679-f790cc44a517?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxjYXIlMjBvdXRsaW5lfGVufDB8fHx8MTc2NDQ1NzAwOHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1624633022679-f790cc44a517?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxjYXIlMjBvdXRsaW5lfGVufDB8fHx8MTc2NDQ1NzAwOHww&ixlib.rb-4.1.0&q=80&w=1080",
       "imageHint": "car outline"
     },
     {
       "id": "google-icon",
       "description": "The Google 'G' logo.",
-      "imageUrl": "https://images.unsplash.com/photo-1529612700005-e35377bf1415?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxnb29nbGUlMjBsb2dvfGVufDB8fHx8MTc2NDUyNzIyOXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1529612700005-e35377bf1415?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxnb29nbGUlMjBsb2dvfGVufDB8fHx8MTc2NDUyNzIyOXww&ixlib.rb-4.1.0&q=80&w=1080",
       "imageHint": "google logo"
     }
   ]
