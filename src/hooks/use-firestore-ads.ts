@@ -50,11 +50,11 @@ export function useFirestoreAds() {
       }
       setLoading(true);
 
+      const adRef = doc(firestore, `users/${user.uid}/ads`, ad.id);
+
       try {
-        // Upload any new images (data URIs) and get their storage URLs
         const imageUrls = await uploadImages(ad.images || []);
 
-        const adRef = doc(firestore, `users/${user.uid}/ads`, ad.id);
         const adToSave: Partial<Ad> = {
           ...ad,
           userId: user.uid,
@@ -66,7 +66,6 @@ export function useFirestoreAds() {
           adToSave.createdAt = serverTimestamp();
         }
 
-        // Use a standard, awaited setDoc to ensure creation/update
         await setDoc(adRef, adToSave, { merge: true });
 
         const finalAd = { ...ad, images: imageUrls, userId: user.uid };
@@ -74,12 +73,14 @@ export function useFirestoreAds() {
         return finalAd;
       } catch (e: any) {
         setLoading(false);
-        // Re-throw or handle the error as appropriate
-        throw new FirestorePermissionError({
-          path: `users/${user.uid}/ads/${ad.id}`,
+        const permissionError = new FirestorePermissionError({
+          path: adRef.path,
           operation: 'write',
           requestResourceData: ad,
         });
+        errorEmitter.emit('permission-error', permissionError);
+        // Re-throw the original error to be caught by a higher-level boundary
+        throw e;
       }
     },
     [user, firestore, uploadImages]
@@ -117,16 +118,12 @@ export function useFirestoreAds() {
         return;
       }
 
-      // Find the ad in the current state to get image URLs
       const adData = ads?.find(a => a.id === adId);
 
-      // Delete images from Storage first
       if (adData && adData.images && adData.images.length > 0) {
         for (const imageUrl of adData.images) {
-          // Only try to delete if it's a Firebase Storage URL
           if (imageUrl && imageUrl.startsWith('https://firebasestorage.googleapis.com')) {
             try {
-              // We don't await this to make deletion feel faster, but we catch errors
               deleteImage(imageUrl).catch(err => console.error(`Failed to delete image ${imageUrl}:`, err));
             } catch (error) {
               console.error(`Failed to initiate image deletion for ${imageUrl}:`, error);
@@ -135,7 +132,6 @@ export function useFirestoreAds() {
         }
       }
       
-      // Then delete the Firestore document
       const adRef = doc(firestore, `users/${user.uid}/ads`, adId);
       deleteDoc(adRef).catch(error => {
         errorEmitter.emit(
