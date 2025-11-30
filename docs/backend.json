@@ -60,10 +60,13 @@
           "type": "string",
           "description": "The type of Ad being placed. Can be 'for sale' or 'wanted'."
         },
-        "vehicleImageUrl": {
-          "type": "string",
-          "description": "URL to the image of the vehicle associated with the ad.  Can be an empty string if there is no image.",
-          "format": "uri"
+        "images": {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "format": "uri"
+            },
+            "description": "URLs to the images of the vehicle associated with the ad. We only store the first image to avoid hitting document size limits."
         },
         "createdAt": {
           "type": "string",
@@ -82,7 +85,6 @@
         "title",
         "description",
         "ad_type",
-        "vehicleImageUrl",
         "createdAt",
         "updatedAt"
       ]

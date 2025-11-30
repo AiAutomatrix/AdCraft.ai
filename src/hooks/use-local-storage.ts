@@ -37,7 +37,7 @@ export function useAdStorage() {
     data: firestoreAds,
     isLoading: firestoreLoading,
     error: firestoreError,
-  } = useCollection(userAdsCollection);
+  } = useCollection(firestore ? userAdsCollection : null);
 
   // Load from local storage on initial mount
   useEffect(() => {
@@ -61,7 +61,13 @@ export function useAdStorage() {
         const batch = writeBatch(firestore);
         localAds.forEach((ad) => {
           const adRef = doc(firestore, `users/${user.uid}/ads`, ad.id);
-          batch.set(adRef, {...ad, userId: user.uid, migrated: true, createdAt: ad.createdAt || serverTimestamp() });
+          const adToSave: Ad = {
+            ...ad,
+            userId: user.uid,
+            images: ad.images ? [ad.images[0]] : [], // Only migrate the first image
+            updatedAt: serverTimestamp(),
+          };
+          batch.set(adRef, adToSave);
         });
         await batch.commit();
         localStorage.removeItem('saved-ads');
@@ -82,16 +88,24 @@ export function useAdStorage() {
     (ad: Ad) => {
       if (user && firestore) {
         const adRef = doc(firestore, `users/${user.uid}/ads`, ad.id);
-        const adToSave = { ...ad, userId: user.uid };
-        setDocumentNonBlocking(adRef, adToSave, { merge: true });
+        // Create a version of the ad for Firestore that only includes the first image
+        const adToSaveForFirestore: Ad = {
+          ...ad,
+          userId: user.uid,
+          updatedAt: serverTimestamp(),
+          // Ensure we only store the first image to avoid exceeding Firestore's limits.
+          // The full list of images is preserved in the local state via the form.
+          images: ad.images && ad.images.length > 0 ? [ad.images[0]] : [],
+        };
+        setDocumentNonBlocking(adRef, adToSaveForFirestore, { merge: true });
       } else {
         setLocalAds((prevAds) => {
           const existing = prevAds.find((a) => a.id === ad.id);
           let newAds;
           if (existing) {
-            newAds = prevAds.map((a) => (a.id === ad.id ? ad : a));
+            newAds = prevAds.map((a) => (a.id === ad.id ? { ...ad, updatedAt: new Date().toISOString() } : a));
           } else {
-            newAds = [...prevAds, ad];
+            newAds = [...prevAds, { ...ad, updatedAt: new Date().toISOString() }];
           }
           localStorage.setItem('saved-ads', JSON.stringify(newAds));
           return newAds;

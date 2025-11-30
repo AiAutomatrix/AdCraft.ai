@@ -7,5 +7,6 @@ export type Ad = {
   content: string;
   type: 'sale' | 'wanted';
   createdAt: string | Timestamp;
+  updatedAt?: string | Timestamp;
   images?: string[];
 };
