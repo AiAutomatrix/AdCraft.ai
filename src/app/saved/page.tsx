@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowRight, Car, Copy, Edit, FilePlus, Loader2, MoreVertical, Search, Trash2 } from 'lucide-react';
+import { ArrowRight, Car, Copy, Edit, FilePlus, Loader2, MoreVertical, Search, Share2, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -45,6 +45,25 @@ export default function SavedAdsPage() {
   const copyAd = (content: string) => {
     navigator.clipboard.writeText(content);
     toast({ title: "Copied to Clipboard", description: "The ad content is ready to be pasted." });
+  };
+
+  const handleShare = async (ad: Ad) => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: ad.title,
+          text: ad.content,
+        });
+        toast({ title: "Shared successfully!" });
+      } catch (error) {
+        // This can happen if the user cancels the share dialog
+        console.log('Share was cancelled or failed', error);
+      }
+    } else {
+      // Fallback for desktop or unsupported browsers
+      copyAd(ad.content);
+      toast({ title: "Browser not supported", description: "Share feature not available. Ad content copied to clipboard instead." });
+    }
   };
 
   if (!isClient) {
@@ -128,6 +147,9 @@ export default function SavedAdsPage() {
               <CardFooter className="flex gap-2 justify-end mt-auto pt-4 border-t border-border/50">
                 <Button variant="outline" size="sm" onClick={() => router.push(`/edit/${ad.id}`)}>
                     <Edit className="mr-2 h-4 w-4" /> Edit
+                </Button>
+                 <Button variant="outline" size="sm" onClick={() => handleShare(ad)}>
+                    <Share2 className="mr-2 h-4 w-4" /> Share
                 </Button>
                 
                 <DropdownMenu>
