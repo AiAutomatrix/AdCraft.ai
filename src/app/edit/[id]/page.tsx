@@ -62,7 +62,7 @@ export default function EditAdPage() {
 
   const { user, isUserLoading } = useUser();
   const [ad, setLocalAd] = useState<Ad | null>(null);
-  const [isNew, setIsNew] = useState(id === 'new' || !!sessionStorage.getItem('generatedAd_new'));
+  const [isNew, setIsNew] = useState(false);
   
   const [aiSuggestions, setAiSuggestions] = useState<AISuggestions | null>(null);
   const [isImproving, setIsImproving] = useState(false);
@@ -91,10 +91,13 @@ export default function EditAdPage() {
         return;
     }
 
-    let adDataToSet: Ad | null = null;
     const newAdDataString = sessionStorage.getItem('generatedAd_new');
+    const isCreatingNewAd = id === 'new' || !!newAdDataString;
+    setIsNew(isCreatingNewAd);
 
-    if (isNew && newAdDataString) {
+    let adDataToSet: Ad | null = null;
+    
+    if (isCreatingNewAd && newAdDataString) {
       try {
         const parsedData = JSON.parse(newAdDataString);
         adDataToSet = {
@@ -113,7 +116,7 @@ export default function EditAdPage() {
             const existingAd = ads.find(a => a.id === id);
             if (existingAd) {
                 adDataToSet = existingAd;
-            } else if (!isNew) { // Only show not found if it's not a new ad being created
+            } else if (!isCreatingNewAd) { // Only show not found if it's not a new ad being created
                 toast({ title: 'Ad not found', variant: 'destructive' });
                 router.replace('/saved');
                 return;
@@ -124,7 +127,7 @@ export default function EditAdPage() {
     if (adDataToSet) {
         setLocalAd(adDataToSet);
         form.reset({ title: adDataToSet.title, content: adDataToSet.content });
-    } else if (isNew && !newAdDataString) {
+    } else if (isCreatingNewAd && !newAdDataString) {
         // If /edit/new is accessed directly or refreshed, no data will be in session storage.
         toast({ title: 'No ad data found', description: 'Please create an ad first.', variant: 'destructive' });
         router.replace('/create');
@@ -133,7 +136,7 @@ export default function EditAdPage() {
 
     setInitialDataLoaded(true);
 
-  }, [id, isNew, form, router, toast, adsLoading, isUserLoading, user, ads]);
+  }, [id, form, router, toast, adsLoading, isUserLoading, user, ads]);
 
 
   const onSubmit = async (data: AdFormData) => {
@@ -488,3 +491,5 @@ export default function EditAdPage() {
     </div>
   );
 }
+
+    
