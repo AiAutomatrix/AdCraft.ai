@@ -288,8 +288,8 @@ export default function EditAdPage() {
     <div className="container max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            <div className={cn("grid gap-8", activeTab === 'edit' && adAllowsImages && 'md:grid-cols-2')}>
-                {adAllowsImages && activeTab === 'edit' && (
+            <div className={cn("grid gap-8", adAllowsImages && "md:grid-cols-2")}>
+                {adAllowsImages && (
                      <Card>
                         <CardHeader className="flex flex-row items-center justify-between">
                             <div>
@@ -390,7 +390,7 @@ export default function EditAdPage() {
                    </Card>
                 )}
                 
-                <Card className={cn(activeTab === 'edit' && adAllowsImages && 'md:col-start-2')}>
+                <Card className={cn(!adAllowsImages && "md:col-span-2")}>
                     <CardHeader>
                         <div className="flex justify-between items-start">
                             <div>
@@ -438,7 +438,7 @@ export default function EditAdPage() {
                                 )}
                             />
                         </TabsContent>
-                        <TabsContent value="preview" className="prose dark:prose-invert prose-sm max-w-none rounded-md border bg-card p-4">
+                        <TabsContent value="preview" className="prose dark:prose-invert prose-sm max-w-none rounded-md border bg-card p-4 min-h-[398px]">
                             {adAllowsImages && ad.images && ad.images.length > 0 && (
                                 <Carousel className="w-full mb-4 -mt-2">
                                     <CarouselContent>
@@ -543,3 +543,5 @@ export default function EditAdPage() {
     </div>
   );
 }
+
+    
