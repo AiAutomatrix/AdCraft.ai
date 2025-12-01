@@ -1,11 +1,10 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { v4 as uuidv4 } from 'uuid';
 import ReactMarkdown from 'react-markdown';
 import Image from 'next/image';
 
@@ -22,7 +21,7 @@ import { useUser } from '@/firebase';
 import { processImage } from '@/lib/image-utils';
 
 
-import { ArrowLeft, Copy, Loader2, Save, Sparkles, Trash2, Wand2, Upload, X, Search, Briefcase } from 'lucide-react';
+import { ArrowLeft, Copy, Loader2, Save, Sparkles, Trash2, Wand2, Upload, X, Search, Briefcase, PlusCircle } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -62,6 +61,7 @@ export default function EditAdPage() {
 
   const { user, isUserLoading } = useUser();
   const [ad, setLocalAd] = useState<Ad | null>(null);
+  
   const [isNew, setIsNew] = useState(false);
   
   const [aiSuggestions, setAiSuggestions] = useState<AISuggestions | null>(null);
@@ -221,33 +221,47 @@ export default function EditAdPage() {
   };
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      if (file.size > 10 * 1024 * 1024) { // 10MB limit
-        toast({
-          title: 'Image too large',
-          description: 'Please select an image smaller than 10MB.',
-          variant: 'destructive',
-        });
-        return;
-      }
-      
-      setIsProcessingImage(true);
-      try {
-        const processedImage = await processImage(file);
-        setLocalAd(prev => prev ? {...prev, images: [processedImage]} : null);
-      } catch (error) {
-        console.error("Image processing failed:", error);
-        toast({
-            title: 'Image Processing Failed',
-            description: 'Could not process the selected image. Please try another one.',
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+  
+    setIsProcessingImage(true);
+    try {
+      const imagePromises = Array.from(files).map(file => {
+        if (file.size > 10 * 1024 * 1024) { // 10MB limit
+          toast({
+            title: `Image ${file.name} too large`,
+            description: 'Please select images smaller than 10MB.',
             variant: 'destructive',
-        });
-      } finally {
-        setIsProcessingImage(false);
+          });
+          return Promise.resolve(null);
+        }
+        return processImage(file);
+      });
+  
+      const processedImages = (await Promise.all(imagePromises)).filter((img): img is string => img !== null);
+      
+      setLocalAd(prev => {
+        if (!prev) return null;
+        const newImages = [...(prev.images || []), ...processedImages];
+        return { ...prev, images: newImages };
+      });
+  
+    } catch (error) {
+      console.error("Image processing failed:", error);
+      toast({
+        title: 'Image Processing Failed',
+        description: 'Could not process the selected images. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsProcessingImage(false);
+      // Clear the file input so the same file can be selected again if needed
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
       }
     }
   };
+  
 
   const removeImage = (index: number) => {
     setLocalAd(prev => {
@@ -266,7 +280,6 @@ export default function EditAdPage() {
   
   const adContent = form.watch('content');
   const adTitle = form.watch('title');
-  const currentImage = ad.images && ad.images.length > 0 ? ad.images[0] : null;
 
   return (
     <div className="container py-12 max-w-6xl">
@@ -277,62 +290,60 @@ export default function EditAdPage() {
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             <div className="grid md:grid-cols-2 gap-8">
                 {adAllowsImages ? (
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="font-headline text-2xl">Image</CardTitle>
-                            <CardDescription>Upload an image for your ad. Large images are resized.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <input
-                                type="file"
-                                accept="image/*"
-                                ref={fileInputRef}
-                                onChange={handleFileChange}
-                                className="hidden"
-                                disabled={isSaving || isProcessingImage}
-                            />
-                            {currentImage ? (
-                                <div className="relative group">
-                                    <Image
-                                    src={currentImage}
-                                    alt="Ad preview"
-                                    width={600}
-                                    height={400}
-                                    className="rounded-lg object-cover w-full aspect-video"
-                                    />
-                                    <Button 
-                                        type="button"
-                                        variant="destructive" 
-                                        size="icon" 
-                                        className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        onClick={() => removeImage(0)}
-                                        disabled={isSaving}
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            ) : (
-                                <button
-                                    type="button"
-                                    onClick={() => fileInputRef.current?.click()}
-                                    disabled={isSaving || isProcessingImage}
-                                    className="w-full h-64 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center text-muted-foreground hover:bg-muted/50 hover:border-primary transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-                                >
-                                    {isProcessingImage ? (
-                                        <>
-                                            <Loader2 className="h-10 w-10 mb-2 animate-spin" />
-                                            <span>Processing Image...</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Upload className="h-10 w-10 mb-2" />
-                                            <span>Click to upload a photo</span>
-                                        </>
-                                    )}
-                                </button>
-                            )}
-                        </CardContent>
-                    </Card>
+                     <Card>
+                     <CardHeader>
+                       <CardTitle className="font-headline text-2xl">Images</CardTitle>
+                       <CardDescription>Upload one or more images for your ad. Large files are resized.</CardDescription>
+                     </CardHeader>
+                     <CardContent>
+                       <input
+                         type="file"
+                         accept="image/*"
+                         multiple
+                         ref={fileInputRef}
+                         onChange={handleFileChange}
+                         className="hidden"
+                         disabled={isSaving || isProcessingImage}
+                       />
+                       <div className="grid grid-cols-3 gap-4">
+                         {(ad.images || []).map((image, index) => (
+                           <div key={index} className="relative group aspect-square">
+                             <Image
+                               src={image}
+                               alt={`Ad image ${index + 1}`}
+                               fill
+                               className="rounded-md object-cover"
+                             />
+                             <Button
+                               type="button"
+                               variant="destructive"
+                               size="icon"
+                               className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                               onClick={() => removeImage(index)}
+                               disabled={isSaving}
+                             >
+                               <X className="h-4 w-4" />
+                             </Button>
+                           </div>
+                         ))}
+                         <button
+                           type="button"
+                           onClick={() => fileInputRef.current?.click()}
+                           disabled={isSaving || isProcessingImage}
+                           className="aspect-square border-2 border-dashed border-border rounded-md flex flex-col items-center justify-center text-muted-foreground hover:bg-muted/50 hover:border-primary transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                         >
+                           {isProcessingImage ? (
+                             <Loader2 className="h-8 w-8 animate-spin" />
+                           ) : (
+                             <>
+                               <PlusCircle className="h-8 w-8" />
+                               <span className="text-sm mt-2">Add Image</span>
+                             </>
+                           )}
+                         </button>
+                       </div>
+                     </CardContent>
+                   </Card>
                 ) : (
                   <Card>
                     <CardHeader>
