@@ -285,13 +285,13 @@ export default function EditAdPage() {
   const adTitle = form.watch('title');
 
   return (
-    <div className="w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
         <Button variant="ghost" onClick={() => router.back()} className="mb-4">
             <ArrowLeft className="mr-2 h-4 w-4" /> Back
         </Button>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            <div className={cn("grid gap-8", activeTab === 'edit' && 'md:grid-cols-2')}>
+            <div className={cn("grid gap-8", activeTab === 'edit' && adAllowsImages && 'md:grid-cols-2')}>
                 {adAllowsImages && activeTab === 'edit' && (
                      <Card>
                         <CardHeader className="flex flex-row items-center justify-between">
@@ -392,19 +392,8 @@ export default function EditAdPage() {
                      </CardContent>
                    </Card>
                 )}
-                {!adAllowsImages && activeTab === 'edit' && (
-                  <Card>
-                    <CardHeader>
-                        <CardTitle className="font-headline text-2xl">Image</CardTitle>
-                        <CardDescription>This ad type does not support images.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex items-center justify-center h-64 border-2 border-dashed border-border rounded-lg bg-muted/20">
-                         {ad.type === 'wanted' && <Search className="w-24 h-24 text-muted-foreground/50" />}
-                         {ad.type === 'service' && <Briefcase className="w-24 h-24 text-muted-foreground/50" />}
-                    </CardContent>
-                  </Card>
-                )}
-                <Card>
+                
+                <Card className={cn(activeTab === 'edit' && adAllowsImages && 'md:col-start-2')}>
                     <CardHeader>
                         <div className="flex justify-between items-start">
                             <div>
@@ -557,3 +546,4 @@ export default function EditAdPage() {
     </div>
   );
 }
+
