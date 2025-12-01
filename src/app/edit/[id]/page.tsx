@@ -120,7 +120,7 @@ export default function EditAdPage() {
             const existingAd = ads.find(a => a.id === id);
             if (existingAd) {
                 adDataToSet = existingAd;
-                setActiveTab('preview');
+                setActiveTab(existingAd.images && existingAd.images.length > 0 ? 'preview' : 'edit');
             } else if (!isCreatingNewAd) { // Only show not found if it's not a new ad being created
                 toast({ title: 'Ad not found', variant: 'destructive' });
                 router.replace('/saved');
@@ -283,13 +283,15 @@ export default function EditAdPage() {
   
   const adContent = form.watch('content');
   const adTitle = form.watch('title');
+  
+  const showImageManager = adAllowsImages && activeTab === 'edit';
 
   return (
     <div className="container max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            <div className={cn("grid gap-8", adAllowsImages && "md:grid-cols-2")}>
-                {adAllowsImages && (
+            <div className={cn("grid gap-8", showImageManager && "md:grid-cols-2")}>
+                {showImageManager && (
                      <Card>
                         <CardHeader className="flex flex-row items-center justify-between">
                             <div>
@@ -390,7 +392,7 @@ export default function EditAdPage() {
                    </Card>
                 )}
                 
-                <Card className={cn(!adAllowsImages && "md:col-span-2")}>
+                <Card className={cn(!showImageManager && "md:col-span-2")}>
                     <CardHeader>
                         <div className="flex justify-between items-start">
                             <div>
@@ -543,5 +545,3 @@ export default function EditAdPage() {
     </div>
   );
 }
-
-    
