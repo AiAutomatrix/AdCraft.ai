@@ -218,7 +218,7 @@ export default function EditAdPage() {
     const currentValues = form.getValues();
     const result = await generateAdTitleAction({
         adContent: currentValues.content,
-        adType: ad.type as 'sale' | 'wanted', // API expects specific enum
+        adType: ad.type,
     });
 
     if (result.error) {
