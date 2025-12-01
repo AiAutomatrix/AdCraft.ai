@@ -2,7 +2,7 @@
 'use client';
 
 import { Ad } from '@/lib/types';
-import { useCollection, useMemoFirebase } from '@/firebase';
+import { useMemoFirebase } from '@/firebase';
 import { collection, getDoc, doc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -41,6 +41,91 @@ type UserProfile = {
   email: string;
   photoURL: string;
 };
+
+const AdCard = ({ ad }: { ad: Ad }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const getBadgeVariant = (type: Ad['type']) => {
+    switch (type) {
+      case 'sale':
+      case 'item':
+        return 'default';
+      case 'wanted':
+      case 'service':
+        return 'secondary';
+      default:
+        return 'outline';
+    }
+  };
+
+  const getPlaceholderIcon = (type: Ad['type']) => {
+    switch (type) {
+      case 'sale': return <Car className="w-16 h-16 text-text-secondary opacity-50" />;
+      case 'wanted': return <Search className="w-16 h-16 text-text-secondary opacity-50" />;
+      case 'item': return <Package className="w-16 h-16 text-text-secondary opacity-50" />;
+      case 'service': return <Briefcase className="w-16 h-16 text-text-secondary opacity-50" />;
+      default: return null;
+    }
+  };
+
+  return (
+    <Card className="flex flex-col overflow-hidden h-full bg-surface-2 border-border/50">
+      <div className="bg-surface-1 flex items-center justify-center group">
+        {ad.images && ad.images.length > 0 ? (
+          <Carousel className="w-full h-full">
+            <CarouselContent>
+              {ad.images.map((image, index) => (
+                <CarouselItem key={index}>
+                  <div className="aspect-video relative">
+                    <Image src={image} alt={`${ad.title} - image ${index + 1}`} fill className="object-cover" />
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            {ad.images.length > 1 && (
+              <>
+                <CarouselPrevious className="absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <CarouselNext className="absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </>
+            )}
+          </Carousel>
+        ) : (
+          <div className="aspect-video flex items-center justify-center">
+            {getPlaceholderIcon(ad.type)}
+          </div>
+        )}
+      </div>
+      <CardHeader>
+        <div className="flex justify-between items-start gap-4">
+          <CardTitle className="font-headline text-xl pr-2 line-clamp-2">{ad.title}</CardTitle>
+          <Badge variant={getBadgeVariant(ad.type)} className="capitalize flex-shrink-0">{ad.type}</Badge>
+        </div>
+        <CardDescription>
+          Created on {formatDate(ad.createdAt)}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex-grow">
+        <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+          <div className="space-y-2">
+            {!isOpen && (
+              <p className="text-sm text-text-secondary line-clamp-3">{ad.content}</p>
+            )}
+            <CollapsibleTrigger asChild>
+              <Button variant="link" className="p-0 h-auto text-xs">
+                {isOpen ? 'Read less' : 'Read more'}
+                <ChevronsUpDown className="h-3 w-3 ml-1" />
+              </Button>
+            </CollapsibleTrigger>
+          </div>
+          <CollapsibleContent>
+            <p className="text-sm text-text-secondary mt-2">{ad.content}</p>
+          </CollapsibleContent>
+        </Collapsible>
+      </CardContent>
+    </Card>
+  );
+};
+
 
 export default function UserProfilePage() {
   const params = useParams();
@@ -162,58 +247,7 @@ export default function UserProfilePage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: i * 0.05 }}
             >
-              <Card className="flex flex-col overflow-hidden h-full bg-surface-2 border-border/50">
-                <div className="bg-surface-1 flex items-center justify-center group">
-                    {ad.images && ad.images.length > 0 ? (
-                        <Carousel className="w-full h-full">
-                            <CarouselContent>
-                                {ad.images.map((image, index) => (
-                                  <CarouselItem key={index}>
-                                      <div className="aspect-video relative">
-                                          <Image src={image} alt={`${ad.title} - image ${index + 1}`} fill className="object-cover" />
-                                      </div>
-                                  </CarouselItem>
-                                ))}
-                            </CarouselContent>
-                            {ad.images.length > 1 && (
-                              <>
-                                  <CarouselPrevious className="absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                  <CarouselNext className="absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity" />
-                              </>
-                            )}
-                        </Carousel>
-                    ) : (
-                        <div className="aspect-video flex items-center justify-center">
-                          {getPlaceholderIcon(ad.type)}
-                        </div>
-                    )}
-                </div>
-                <CardHeader>
-                  <div className="flex justify-between items-start gap-4">
-                    <CardTitle className="font-headline text-xl pr-2 line-clamp-2">{ad.title}</CardTitle>
-                    <Badge variant={getBadgeVariant(ad.type)} className="capitalize flex-shrink-0">{ad.type}</Badge>
-                  </div>
-                  <CardDescription>
-                    Created on {formatDate(ad.createdAt)}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="flex-grow">
-                  <Collapsible>
-                    <div className="space-y-2">
-                        <p className="text-sm text-text-secondary line-clamp-3">{ad.content}</p>
-                        <CollapsibleTrigger asChild>
-                            <Button variant="link" className="p-0 h-auto text-xs">
-                                Read more
-                                <ChevronsUpDown className="h-3 w-3 ml-1" />
-                            </Button>
-                        </CollapsibleTrigger>
-                    </div>
-                    <CollapsibleContent>
-                      <p className="text-sm text-text-secondary mt-2">{ad.content}</p>
-                    </CollapsibleContent>
-                  </Collapsible>
-                </CardContent>
-              </Card>
+              <AdCard ad={ad} />
             </motion.div>
           ))}
         </div>
