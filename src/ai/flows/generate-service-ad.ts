@@ -11,10 +11,12 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const GenerateServiceAdInputSchema = z.object({
-  description: z.string().describe('A text description of the service being offered.'),
+  description: z.optional(z.string()).describe('An optional text description of the service being offered.'),
   photoDataUri: z.optional(z.string()).describe(
     "An optional photo related to the service, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
   ),
+}).refine(data => data.description || data.photoDataUri, {
+    message: "Either a description or a photo must be provided.",
 });
 
 
@@ -39,7 +41,8 @@ const generateServiceAdPrompt = ai.definePrompt({
   output: {schema: GenerateServiceAdOutputSchema},
   prompt: `You are an expert in creating compelling advertisements for services.
 
-  Based on the user's description and optional image, generate a compelling, descriptive title and a full ad text formatted in Markdown.
+  Based on the user's optional description and optional image, generate a compelling, descriptive title and a full ad text formatted in Markdown.
+  At least one input, either an image or a description, will be provided. If only an image is provided, analyze it to determine the service.
   The generated ad should be professional, clear, and highlight the key benefits and value of the service.
   
   {{#if photoDataUri}}
@@ -47,7 +50,9 @@ const generateServiceAdPrompt = ai.definePrompt({
   Image: {{media url=photoDataUri}}
   {{/if}}
 
+  {{#if description}}
   User's service description: {{{description}}}
+  {{/if}}
   
   Generate a title and the ad text.`,
 });

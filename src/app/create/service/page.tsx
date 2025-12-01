@@ -61,10 +61,10 @@ export default function GenerateServiceAd() {
   }
 
   const handleGenerate = async () => {
-    if (!description.trim()) {
+    if (!description.trim() && !imagePreview) {
       toast({
-        title: 'Description is empty',
-        description: 'Please describe the service you are offering.',
+        title: 'No input provided',
+        description: 'Please describe your service or upload a reference image.',
         variant: 'destructive',
       });
       return;
@@ -121,7 +121,7 @@ export default function GenerateServiceAd() {
     }
   };
 
-  const isButtonDisabled = isGenerating || !description.trim() || isProcessingImage || isUserLoading;
+  const isButtonDisabled = isGenerating || (!description.trim() && !imagePreview) || isProcessingImage || isUserLoading;
   const isUploaderDisabled = isGenerating || isProcessingImage || isUserLoading;
 
   return (
@@ -129,7 +129,7 @@ export default function GenerateServiceAd() {
       <Card className="max-w-2xl mx-auto">
         <CardHeader>
           <CardTitle className="font-headline text-3xl">Generate an Ad for a Service</CardTitle>
-          <CardDescription>Describe the service you offer. You can also upload a reference photo.</CardDescription>
+          <CardDescription>Describe the service you offer, upload an image, or both.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           
@@ -185,7 +185,7 @@ export default function GenerateServiceAd() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Service Description</Label>
+            <Label htmlFor="description">Service Description (Optional)</Label>
             <Textarea
               id="description"
               value={description}
