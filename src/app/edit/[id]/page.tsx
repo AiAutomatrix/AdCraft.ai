@@ -285,7 +285,7 @@ export default function EditAdPage() {
   const adTitle = form.watch('title');
 
   return (
-    <div className="container py-6 max-w-6xl">
+    <div className="w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <Button variant="ghost" onClick={() => router.back()} className="mb-4">
             <ArrowLeft className="mr-2 h-4 w-4" /> Back
         </Button>
