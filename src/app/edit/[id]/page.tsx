@@ -275,7 +275,7 @@ export default function EditAdPage() {
     });
   };
 
-  const adAllowsImages = ad?.type === 'sale' || ad?.type === 'item';
+  const adAllowsImages = ad?.type === 'sale' || ad?.type === 'item' || ad?.type === 'service';
 
   if (adsLoading || isUserLoading || !initialDataLoaded || !ad) {
     return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
