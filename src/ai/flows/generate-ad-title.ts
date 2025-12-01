@@ -52,6 +52,7 @@ const generateAdTitleFlow = ai.defineFlow(
       outputSchema: GenerateAdTitleOutputSchema,
     },
     async input => {
+      console.log('Server: Received input for title generation:', input);
       const {text} = await generateTitlePrompt(input);
       return text!;
     }

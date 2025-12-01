@@ -216,10 +216,12 @@ export default function EditAdPage() {
     if (!ad) return;
     setIsGeneratingTitle(true);
     const currentValues = form.getValues();
-    const result = await generateAdTitleAction({
+    const inputForAI = {
         adContent: currentValues.content,
         adType: ad.type,
-    });
+    };
+    console.log('Client: Generating title with input:', inputForAI);
+    const result = await generateAdTitleAction(inputForAI);
 
     if (result.error) {
         toast({ title: "Title Generation Failed", description: result.error, variant: 'destructive' });
@@ -417,7 +419,7 @@ export default function EditAdPage() {
                             />
                         </TabsContent>
                         <TabsContent value="preview" className="prose dark:prose-invert prose-sm max-w-none min-h-[354px] rounded-md border bg-card p-4">
-                            <h2>{adTitle}</h2>
+                            <h2 className="font-headline text-2xl mt-0">{adTitle}</h2>
                             <ReactMarkdown>{adContent}</ReactMarkdown>
                         </TabsContent>
                     </Tabs>
