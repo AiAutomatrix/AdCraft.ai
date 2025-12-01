@@ -88,7 +88,7 @@ export default function UserProfilePage({ params }: { params: { userId: string }
     const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
     const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
     if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) return 0;
-    return dateB.getTime() - a.getTime();
+    return dateB.getTime() - dateA.getTime();
   });
   
   const getBadgeVariant = (type: Ad['type']) => {
