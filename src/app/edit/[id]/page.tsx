@@ -141,7 +141,7 @@ export default function EditAdPage() {
       setInitialDataLoaded(true);
     }
     
-  }, [id, form, router, toast, adsLoading, isUserLoading, user, ads, initialDataLoaded]);
+  }, [id, form, router, toast, ads, adsLoading, isUserLoading, user, initialDataLoaded]);
 
 
   const onSubmit = async (data: AdFormData) => {
@@ -284,6 +284,7 @@ export default function EditAdPage() {
   }
   
   const adContent = form.watch('content');
+  const adTitle = form.watch('title');
   const currentImage = ad.images && ad.images.length > 0 ? ad.images[0] : null;
 
   return (
@@ -376,25 +377,6 @@ export default function EditAdPage() {
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-6">
-                    <FormField
-                        control={form.control}
-                        name="title"
-                        render={({ field }) => (
-                        <FormItem>
-                            <div className="flex justify-between items-center">
-                                <FormLabel className="text-lg">Ad Title</FormLabel>
-                                <Button type="button" size="sm" variant="ghost" onClick={handleGenerateTitle} disabled={isGeneratingTitle}>
-                                    {isGeneratingTitle ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                                    Generate
-                                </Button>
-                            </div>
-                            <FormControl>
-                            <Input placeholder="e.g., For Sale: 2020 Ford Mustang" {...field} className="text-base" />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
                     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                         <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="edit">Edit</TabsTrigger>
@@ -403,11 +385,29 @@ export default function EditAdPage() {
                         <TabsContent value="edit">
                             <FormField
                                 control={form.control}
+                                name="title"
+                                render={({ field }) => (
+                                <FormItem className='mb-4'>
+                                    <div className="flex justify-between items-center">
+                                        <FormLabel className="text-lg">Ad Title</FormLabel>
+                                        <Button type="button" size="sm" variant="ghost" onClick={handleGenerateTitle} disabled={isGeneratingTitle}>
+                                            {isGeneratingTitle ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                                            Generate
+                                        </Button>
+                                    </div>
+                                    <FormControl>
+                                    <Input placeholder="e.g., For Sale: 2020 Ford Mustang" {...field} className="text-base" />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
                                 name="content"
                                 render={({ field }) => (
                                 <FormItem>
                                     <FormLabel className="sr-only">Ad Content</FormLabel>
-
                                     <FormControl>
                                     <Textarea placeholder="Your ad copy will appear here..." {...field} className="min-h-[250px] text-base" />
                                     </FormControl>
@@ -416,7 +416,8 @@ export default function EditAdPage() {
                                 )}
                             />
                         </TabsContent>
-                        <TabsContent value="preview" className="prose dark:prose-invert prose-sm max-w-none min-h-[282px] rounded-md border bg-card p-4">
+                        <TabsContent value="preview" className="prose dark:prose-invert prose-sm max-w-none min-h-[354px] rounded-md border bg-card p-4">
+                            <h2>{adTitle}</h2>
                             <ReactMarkdown>{adContent}</ReactMarkdown>
                         </TabsContent>
                     </Tabs>
