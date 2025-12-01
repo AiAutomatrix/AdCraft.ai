@@ -17,8 +17,8 @@ const fontHeadline = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: 'AdCraft AI - Vehicle Ad Generator',
-  description: 'Instantly generate compelling sales or wanted ads for any vehicle using AI.',
+  title: 'AdCraft AI - AI Vision Ad Generator for Vehicles & Items',
+  description: 'Use AI Vision to analyze images of your vehicle or item and instantly generate compelling ads. Save and share across any platform.',
 };
 
 export default function RootLayout({

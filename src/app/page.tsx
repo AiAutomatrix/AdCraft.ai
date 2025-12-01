@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { ArrowRight, FilePlus2, FolderKanban, Wand2 } from 'lucide-react';
+import { ArrowRight, Eye, FolderKanban, Wand2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -13,27 +13,27 @@ import Autoplay from "embla-carousel-autoplay";
 export default function Home() {
   const features = [
     {
-      icon: <FilePlus2 className="h-8 w-8 text-primary" />,
-      title: 'Effortless Ad Creation',
-      description: 'Generate a "Wanted" ad with a single click by describing what you need.',
+      icon: <Eye className="h-8 w-8 text-primary" />,
+      title: 'Powerful AI Vision Analysis',
+      description: 'Upload a photo and our AI Vision will instantly identify your vehicle or item, analyzing its features to generate a detailed and accurate ad.',
     },
     {
       icon: <Wand2 className="h-8 w-8 text-primary" />,
       title: 'AI-Powered Content',
-      description: 'Our AI analyzes your input to write persuasive and effective ad copy instantly.',
+      description: 'Our AI writes persuasive and effective ad copy instantly, tailored to whether you are selling, buying, or offering a service.',
     },
     {
       icon: <FolderKanban className="h-8 w-8 text-primary" />,
-      title: 'Save & Manage',
-      description: 'Keep all your generated ads in one place. Edit, copy, or delete them as needed.',
+      title: 'Save & Share Anywhere',
+      description: 'Keep all your ads in one place. Edit, copy, and share them across multiple platforms with a single click.',
     },
   ];
   
   const heroSlides = [
     {
       id: 'sell-vehicle',
-      title: 'Craft the Perfect Vehicle Ad with AI',
-      description: "Whether you're selling your car or searching for a new one, AdCraft AI generates compelling ads from a simple description.",
+      title: 'Turn a Photo into a Polished Ad with AI Vision',
+      description: "Upload an image of your car and let our AI Vision analyze it. We'll identify the make, model, and features to write a compelling ad for you.",
       image: PlaceHolderImages.find(p => p.id === 'hero-car-sell')
     },
     {
@@ -44,14 +44,14 @@ export default function Home() {
     },
     {
       id: 'sell-item',
-      title: 'Sell Your Items in a Snap',
-      description: "From vintage cameras to modern electronics, upload a photo and get a professional-quality sales ad in seconds.",
+      title: 'Sell Anything with an AI-Generated Ad',
+      description: "Use our AI Vision to analyze a photo of any item. From furniture to electronics, get a high-quality sales ad in seconds.",
       image: PlaceHolderImages.find(p => p.id === 'hero-item-sell')
     },
     {
       id: 'offer-service',
-      title: 'Offer Your Home Repair Services',
-      description: "From plumbing to painting, describe your professional services and let AI create an engaging ad to attract new clients.",
+      title: 'Offer Your Professional Services',
+      description: "Describe your professional services and let our AI create an engaging ad to attract new clients.",
       image: PlaceHolderImages.find(p => p.id === 'hero-service-offer')
     }
   ].filter(slide => slide.image); // Filter out slides if image is not found
@@ -157,7 +157,7 @@ export default function Home() {
                 Everything You Need to Get Noticed
               </h2>
               <p className="max-w-[900px] text-text-secondary md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                From AI analysis to easy editing, our tools are designed to make your vehicle ads stand out from the crowd.
+                Our core is AI vision analysis. We identify items in your photos to create superior ads, which you can then save, edit, and share anywhere.
               </p>
             </div>
           </div>
