@@ -1,8 +1,7 @@
-
 'use client';
 
 import { Ad } from '@/lib/types';
-import { useMemoFirebase } from '@/firebase';
+import { useMemoFirebase, useFirestore, useCollection } from '@/firebase';
 import { collection, getDoc, doc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -12,7 +11,6 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowRight, Car, FilePlus, Loader2, Search, Briefcase, Package, ChevronsUpDown } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
-import { useFirestore } from '@/firebase';
 import { useEffect, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { notFound, useParams } from 'next/navigation';
