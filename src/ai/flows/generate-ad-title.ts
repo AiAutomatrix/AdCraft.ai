@@ -57,6 +57,9 @@ const generateAdTitleFlow = ai.defineFlow(
       console.log('Server: Received input for title generation:', input);
       const { output } = await generateTitlePrompt(input);
       console.log('Server: AI generated output object:', output);
-      return output!;
+      if (!output) {
+        throw new Error('AI failed to generate an output.');
+      }
+      return output;
     }
 );
