@@ -15,7 +15,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { useFirestore } from '@/firebase';
 import { useEffect, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { notFound } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 function formatDate(timestamp: any): string {
@@ -42,8 +42,9 @@ type UserProfile = {
   photoURL: string;
 };
 
-export default function UserProfilePage({ params }: { params: { userId: string } }) {
-  const { userId } = params;
+export default function UserProfilePage() {
+  const params = useParams();
+  const userId = params.userId as string;
   const firestore = useFirestore();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
