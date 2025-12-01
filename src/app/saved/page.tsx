@@ -193,6 +193,12 @@ export default function SavedAdsPage() {
             </div>
              {/* Desktop Buttons */}
              <div className='hidden sm:flex items-center gap-2'>
+              <Button asChild variant="secondary" className="font-semibold">
+                 <Link href={`/profile/${user.uid}`}>
+                    <User className="mr-2 h-4 w-4" />
+                    View Public Profile
+                </Link>
+              </Button>
               <Button onClick={handleShareProfile} variant="secondary" className="font-semibold">
                 <Share2 className="mr-2 h-4 w-4" />
                 Share Profile
