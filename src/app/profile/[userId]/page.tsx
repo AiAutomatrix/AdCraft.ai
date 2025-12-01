@@ -1,7 +1,7 @@
 'use client';
 
 import { Ad } from '@/lib/types';
-import { useMemoFirebase, useFirestore } from '@/firebase';
+import { useMemoFirebase, useFirestore, useCollection } from '@/firebase';
 import { collection, getDoc, doc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
@@ -32,7 +32,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from '@/components/ui/carousel';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { notFound, useParams } from 'next/navigation';
 import {
@@ -41,7 +41,6 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
-import { useCollection } from '@/firebase/firestore/use-collection';
 import ReactMarkdown from 'react-markdown';
 import { textToSpeechAction } from '@/lib/actions';
 
@@ -72,6 +71,7 @@ type UserProfile = {
 const AdCard = ({ ad }: { ad: Ad }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isReadingAloud, setIsReadingAloud] = useState(false);
+  const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
   const { toast } = useToast();
 
   const getBadgeVariant = (type: Ad['type']) => {
@@ -129,15 +129,26 @@ const AdCard = ({ ad }: { ad: Ad }) => {
   };
 
   const handleTextToSpeech = async () => {
+    if (audio) {
+      audio.pause();
+      setAudio(null);
+      setIsReadingAloud(false);
+      return;
+    }
+
     setIsReadingAloud(true);
     try {
       const result = await textToSpeechAction(ad.content);
       if (result.error) {
         throw new Error(result.error);
       }
-      const audio = new Audio(result.media);
-      audio.play();
-      audio.onended = () => setIsReadingAloud(false);
+      const newAudio = new Audio(result.media);
+      setAudio(newAudio);
+      newAudio.play();
+      newAudio.onended = () => {
+        setIsReadingAloud(false);
+        setAudio(null);
+      };
     } catch (error) {
       console.error('Text-to-speech failed:', error);
       toast({
@@ -224,9 +235,9 @@ const AdCard = ({ ad }: { ad: Ad }) => {
               size="icon"
               className="h-8 w-8"
               onClick={handleTextToSpeech}
-              disabled={isReadingAloud}
+              disabled={isReadingAloud && !audio}
             >
-              {isReadingAloud ? (
+              {isReadingAloud && !audio ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Volume2 className="h-4 w-4" />
