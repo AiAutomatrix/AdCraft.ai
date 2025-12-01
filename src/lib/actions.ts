@@ -6,6 +6,7 @@ import { generateServiceAd, GenerateServiceAdInput } from '@/ai/flows/generate-s
 import { generateWantedAd, GenerateWantedAdInput } from '@/ai/flows/generate-wanted-ad';
 import { suggestAdImprovements, SuggestAdImprovementsInput } from '@/ai/flows/suggest-ad-improvements';
 import { generateSaleAdFromText, GenerateSaleAdFromTextInput } from '@/ai/flows/generate-sale-ad-from-text';
+import { textToSpeech, TextToSpeechInput } from '@/ai/flows/text-to-speech';
 
 // Action to generate a vehicle sale ad from an image
 export async function generateAdFromImageAction(input: GenerateAdFromImageInput) {
@@ -71,5 +72,15 @@ export async function suggestAdImprovementsAction(input: SuggestAdImprovementsIn
   } catch (error) {
     console.error('Error in suggestAdImprovementsAction:', error);
     return { error: 'Failed to get suggestions. The AI model might be unavailable.' };
+  }
+}
+
+export async function textToSpeechAction(input: TextToSpeechInput) {
+  try {
+    const result = await textToSpeech(input);
+    return result;
+  } catch (error) {
+    console.error('Error in textToSpeechAction:', error);
+    return { error: 'Failed to generate audio. The AI model might be unavailable.' };
   }
 }
