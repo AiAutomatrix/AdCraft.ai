@@ -2,8 +2,8 @@
 
 import { generateAdFromImage, GenerateAdFromImageInput } from '@/ai/flows/generate-ad-from-image';
 import { generateItemAdFromImage, GenerateItemAdFromImageInput } from '@/ai/flows/generate-item-ad-from-image';
-import { generateServiceAdFromText, GenerateServiceAdFromTextInput } from '@/ai/flows/generate-service-ad-from-text';
-import { generateWantedAd } from '@/ai/flows/generate-wanted-ad';
+import { generateServiceAd, GenerateServiceAdInput } from '@/ai/flows/generate-service-ad';
+import { generateWantedAd, GenerateWantedAdInput } from '@/ai/flows/generate-wanted-ad';
 import { suggestAdImprovements, SuggestAdImprovementsInput } from '@/ai/flows/suggest-ad-improvements';
 import { generateSaleAdFromText, GenerateSaleAdFromTextInput } from '@/ai/flows/generate-sale-ad-from-text';
 
@@ -30,12 +30,12 @@ export async function generateItemAdFromImageAction(input: GenerateItemAdFromIma
 }
 
 // Action to generate a service ad from a text description
-export async function generateServiceAdFromTextAction(input: GenerateServiceAdFromTextInput) {
+export async function generateServiceAdAction(input: GenerateServiceAdInput) {
   try {
-    const result = await generateServiceAdFromText(input);
+    const result = await generateServiceAd(input);
     return result;
   } catch (error) {
-    console.error('Error in generateServiceAdFromTextAction:', error);
+    console.error('Error in generateServiceAdAction:', error);
     return { error: 'Failed to generate service ad. The AI model might be unavailable.' };
   }
 }
@@ -53,10 +53,10 @@ export async function generateSaleAdFromTextAction(input: GenerateSaleAdFromText
 }
 
 // Action to generate a wanted ad from text
-export async function generateWantedAdAction(description: string) {
+export async function generateWantedAdAction(input: GenerateWantedAdInput) {
   try {
-    const result = await generateWantedAd(description);
-    return {title: `Wanted: ${description.substring(0, 40)}...`, content: result, type: 'wanted'};
+    const result = await generateWantedAd(input);
+    return result;
   } catch (error) {
     console.error('Error in generateWantedAdAction:', error);
     return { error: 'Failed to generate wanted ad. The AI model might be unavailable.' };
