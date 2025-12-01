@@ -71,6 +71,7 @@ export default function EditAdPage() {
   const [initialDataLoaded, setInitialDataLoaded] = useState(false);
   const [isProcessingImage, setIsProcessingImage] = useState(false);
   const [isImproveDialogOpen, setIsImproveDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('edit');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -83,7 +84,7 @@ export default function EditAdPage() {
   // This effect handles the initial loading of ad data, either from
   // session storage (for a new ad) or from Firestore (for an existing ad).
   useEffect(() => {
-    if (isUserLoading || adsLoading) return;
+    if (isUserLoading || adsLoading || initialDataLoaded) return;
     
     if (!user) {
         toast({ title: 'Authentication Required', description: 'You must be logged in to edit ads.', variant: 'destructive' });
@@ -105,6 +106,7 @@ export default function EditAdPage() {
           createdAt: new Date().toISOString(),
           ...parsedData,
         };
+        setActiveTab('edit');
       } catch (e) {
         console.error("Failed to parse ad data from session storage", e);
         toast({ title: 'Error loading ad data', variant: 'destructive' });
@@ -116,6 +118,7 @@ export default function EditAdPage() {
             const existingAd = ads.find(a => a.id === id);
             if (existingAd) {
                 adDataToSet = existingAd;
+                setActiveTab('preview');
             } else if (!isCreatingNewAd) { // Only show not found if it's not a new ad being created
                 toast({ title: 'Ad not found', variant: 'destructive' });
                 router.replace('/saved');
@@ -134,9 +137,11 @@ export default function EditAdPage() {
         return;
     }
 
-    setInitialDataLoaded(true);
-
-  }, [id, form, router, toast, adsLoading, isUserLoading, user, ads]);
+    if (adDataToSet || (!isCreatingNewAd && !ads.find(a => a.id === id))) {
+      setInitialDataLoaded(true);
+    }
+    
+  }, [id, form, router, toast, adsLoading, isUserLoading, user, ads, initialDataLoaded]);
 
 
   const onSubmit = async (data: AdFormData) => {
@@ -230,6 +235,7 @@ export default function EditAdPage() {
         form.setValue('content', aiSuggestions.improvedAdCopy, { shouldValidate: true });
         toast({ title: 'AI Suggestions Applied!', description: 'The ad content has been updated.' });
         setIsImproveDialogOpen(false);
+        setActiveTab('preview');
     }
   };
 
@@ -389,7 +395,7 @@ export default function EditAdPage() {
                         </FormItem>
                         )}
                     />
-                    <Tabs defaultValue="edit" className="w-full">
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                         <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="edit">Edit</TabsTrigger>
                             <TabsTrigger value="preview">Preview</TabsTrigger>
@@ -491,5 +497,3 @@ export default function EditAdPage() {
     </div>
   );
 }
-
-    
