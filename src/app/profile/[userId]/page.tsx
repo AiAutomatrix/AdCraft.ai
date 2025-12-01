@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Ad } from '@/lib/types';
@@ -8,13 +9,14 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowRight, Car, FilePlus, Loader2, Search, Briefcase, Package } from 'lucide-react';
+import { ArrowRight, Car, FilePlus, Loader2, Search, Briefcase, Package, ChevronsUpDown } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { useFirestore } from '@/firebase';
 import { useEffect, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { notFound } from 'next/navigation';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 function formatDate(timestamp: any): string {
     if (!timestamp) return 'N/A';
@@ -86,7 +88,7 @@ export default function UserProfilePage({ params }: { params: { userId: string }
     const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
     const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
     if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) return 0;
-    return dateB.getTime() - dateA.getTime();
+    return dateB.getTime() - a.getTime();
   });
   
   const getBadgeVariant = (type: Ad['type']) => {
@@ -195,7 +197,20 @@ export default function UserProfilePage({ params }: { params: { userId: string }
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="flex-grow">
-                  <p className="text-sm text-text-secondary line-clamp-3">{ad.content}</p>
+                  <Collapsible>
+                    <div className="space-y-2">
+                        <p className="text-sm text-text-secondary line-clamp-3">{ad.content}</p>
+                        <CollapsibleTrigger asChild>
+                            <Button variant="link" className="p-0 h-auto text-xs">
+                                Read more
+                                <ChevronsUpDown className="h-3 w-3 ml-1" />
+                            </Button>
+                        </CollapsibleTrigger>
+                    </div>
+                    <CollapsibleContent>
+                      <p className="text-sm text-text-secondary mt-2">{ad.content}</p>
+                    </CollapsibleContent>
+                  </Collapsible>
                 </CardContent>
               </Card>
             </motion.div>
