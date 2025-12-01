@@ -203,7 +203,7 @@ export default function SavedAdsPage() {
                           <CarouselContent>
                               {ad.images.map((image, index) => (
                                 <CarouselItem key={index}>
-                                    <Image src={image} alt={`${ad.title} - image ${index + 1}`} layout="fill" objectFit="cover" />
+                                    <Image src={image} alt={`${ad.title} - image ${index + 1}`} fill className="object-cover" />
                                 </CarouselItem>
                               ))}
                           </CarouselContent>
