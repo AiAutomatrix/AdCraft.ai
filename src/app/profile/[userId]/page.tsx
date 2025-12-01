@@ -1,7 +1,7 @@
 'use client';
 
 import { Ad } from '@/lib/types';
-import { useMemoFirebase, useFirestore, useCollection } from '@/firebase';
+import { useMemoFirebase, useFirestore } from '@/firebase';
 import { collection, getDoc, doc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
@@ -15,6 +15,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { notFound, useParams } from 'next/navigation';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import ReactMarkdown from 'react-markdown';
+
 
 function formatDate(timestamp: any): string {
     if (!timestamp) return 'N/A';
@@ -67,22 +70,23 @@ const AdCard = ({ ad }: { ad: Ad }) => {
     }
   };
   
-  const handleShare = async (ad: Ad) => {
+  const handleShareAd = async () => {
     if (navigator.share) {
-      try {
-        await navigator.share({
-          title: ad.title,
-          text: ad.content,
-        });
-        toast({ title: "Shared successfully!" });
-      } catch (error) {
-        console.log('Share was cancelled or failed', error);
-      }
+        try {
+            await navigator.share({
+                title: ad.title,
+                text: ad.content,
+            });
+            toast({ title: "Ad Shared!", description: "The ad details have been shared." });
+        } catch (error) {
+            console.log('Share was cancelled or failed', error);
+        }
     } else {
-        navigator.clipboard.writeText(ad.content);
-        toast({ title: "Browser not supported", description: "Share feature not available. Ad content copied to clipboard instead." });
+        navigator.clipboard.writeText(`${ad.title}\n\n${ad.content}`);
+        toast({ title: "Content Copied", description: "Share feature not available. Ad content copied instead." });
     }
   };
+
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen} asChild>
@@ -127,7 +131,9 @@ const AdCard = ({ ad }: { ad: Ad }) => {
               <p className="text-sm text-text-secondary line-clamp-3">{ad.content}</p>
             )}
             <CollapsibleContent>
-              <p className="text-sm text-text-secondary mt-2">{ad.content}</p>
+              <ReactMarkdown className="prose dark:prose-invert prose-sm max-w-none">
+                {ad.content}
+              </ReactMarkdown>
             </CollapsibleContent>
           </div>
         </CardContent>
@@ -138,8 +144,9 @@ const AdCard = ({ ad }: { ad: Ad }) => {
                     <ChevronsUpDown className="h-3 w-3 ml-1" />
                 </Button>
             </CollapsibleTrigger>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleShare(ad)}>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleShareAd}>
                 <Share2 className="h-4 w-4" />
+                <span className="sr-only">Share ad</span>
             </Button>
          </CardFooter>
       </Card>
