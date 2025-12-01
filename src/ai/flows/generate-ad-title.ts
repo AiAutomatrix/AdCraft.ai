@@ -18,7 +18,9 @@ const GenerateAdTitleInputSchema = z.object({
 
 export type GenerateAdTitleInput = z.infer<typeof GenerateAdTitleInputSchema>;
 
-const GenerateAdTitleOutputSchema = z.string().describe('The generated high-impact ad title.');
+const GenerateAdTitleOutputSchema = z.object({
+    title: z.string().describe('The generated high-impact ad title.'),
+});
 
 export type GenerateAdTitleOutput = z.infer<typeof GenerateAdTitleOutputSchema>;
 
@@ -53,9 +55,8 @@ const generateAdTitleFlow = ai.defineFlow(
     },
     async input => {
       console.log('Server: Received input for title generation:', input);
-      const response = await generateTitlePrompt(input);
-      const title = response.text;
-      console.log('Server: AI generated title:', title);
-      return title;
+      const { output } = await generateTitlePrompt(input);
+      console.log('Server: AI generated output object:', output);
+      return output!;
     }
 );

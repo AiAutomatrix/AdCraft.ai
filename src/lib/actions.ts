@@ -79,7 +79,7 @@ export async function suggestAdImprovementsAction(input: SuggestAdImprovementsIn
 export async function generateAdTitleAction(input: GenerateAdTitleInput) {
     try {
       const result = await generateAdTitle(input);
-      return { title: result };
+      return result;
     } catch (error) {
       console.error('Error in generateAdTitleAction:', error);
       return { error: 'Failed to generate ad title. The AI model might be unavailable.' };
