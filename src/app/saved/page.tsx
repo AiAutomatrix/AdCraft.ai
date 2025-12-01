@@ -197,13 +197,15 @@ export default function SavedAdsPage() {
             transition={{ duration: 0.5, delay: i * 0.05 }}
           >
             <Card className="flex flex-col overflow-hidden h-full bg-surface-2 border-border/50 transition-all duration-300 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1">
-              <div className="aspect-video bg-surface-1 flex items-center justify-center relative group">
+              <div className="bg-surface-1 flex items-center justify-center group">
                   {ad.images && ad.images.length > 0 ? (
                       <Carousel className="w-full h-full">
                           <CarouselContent>
                               {ad.images.map((image, index) => (
                                 <CarouselItem key={index}>
-                                    <Image src={image} alt={`${ad.title} - image ${index + 1}`} fill className="object-cover" />
+                                    <div className="aspect-video relative">
+                                        <Image src={image} alt={`${ad.title} - image ${index + 1}`} fill className="object-cover" />
+                                    </div>
                                 </CarouselItem>
                               ))}
                           </CarouselContent>
@@ -215,7 +217,9 @@ export default function SavedAdsPage() {
                           )}
                       </Carousel>
                   ) : (
-                      getPlaceholderIcon(ad.type)
+                      <div className="aspect-video flex items-center justify-center">
+                        {getPlaceholderIcon(ad.type)}
+                      </div>
                   )}
               </div>
               <CardHeader>
