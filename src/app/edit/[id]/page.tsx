@@ -137,7 +137,7 @@ export default function EditAdPage() {
         return;
     }
 
-    if (adDataToSet || (!isCreatingNewAd && !ads.find(a => a.id === id))) {
+    if (adDataToSet || (!isCreatingNewAd && ads && !ads.find(a => a.id === id))) {
       setInitialDataLoaded(true);
     }
     
