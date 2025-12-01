@@ -7,7 +7,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowRight, Car, Copy, Edit, FilePlus, Loader2, MoreVertical, Search, Share2, Trash2, Package, Briefcase, UserSquare } from 'lucide-react';
+import { ArrowRight, Car, Copy, Edit, FilePlus, Loader2, MoreVertical, Search, Share2, Trash2, Package, Briefcase, UserSquare, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -191,9 +191,10 @@ export default function SavedAdsPage() {
                 <h1 className="font-headline text-4xl font-bold tracking-tight sm:text-5xl">My Saved Ads</h1>
                 <p className="mt-2 text-text-secondary">Here are all the ads you've crafted.</p>
             </div>
-            <div className='hidden sm:flex items-center gap-2'>
+             {/* Desktop Buttons */}
+             <div className='hidden sm:flex items-center gap-2'>
               <Button onClick={handleShareProfile} variant="secondary" className="font-semibold">
-                <UserSquare className="mr-2 h-4 w-4" />
+                <Share2 className="mr-2 h-4 w-4" />
                 Share Profile
               </Button>
               <Button asChild className="font-semibold">
@@ -202,6 +203,22 @@ export default function SavedAdsPage() {
                       Create New Ad
                   </Link>
               </Button>
+            </div>
+             {/* Mobile Icon Buttons */}
+            <div className='sm:hidden flex items-center gap-1'>
+                <Button asChild variant="ghost" size="icon">
+                    <Link href="/create">
+                        <FilePlus className="h-5 w-5" />
+                    </Link>
+                </Button>
+                <Button asChild variant="ghost" size="icon">
+                     <Link href={`/profile/${user.uid}`}>
+                        <User className="h-5 w-5" />
+                    </Link>
+                </Button>
+                <Button variant="ghost" size="icon" onClick={handleShareProfile}>
+                    <Share2 className="h-5 w-5" />
+                </Button>
             </div>
       </div>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
