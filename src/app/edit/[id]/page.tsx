@@ -70,6 +70,7 @@ export default function EditAdPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [initialDataLoaded, setInitialDataLoaded] = useState(false);
   const [isProcessingImage, setIsProcessingImage] = useState(false);
+  const [isImproveDialogOpen, setIsImproveDialogOpen] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -186,6 +187,7 @@ export default function EditAdPage() {
     if (!ad) return;
     setIsImproving(true);
     setAiSuggestions(null);
+    setIsImproveDialogOpen(true);
 
     const currentValues = form.getValues();
     const result = await suggestAdImprovementsAction({
@@ -195,6 +197,7 @@ export default function EditAdPage() {
 
     if (result.error) {
         toast({ title: "AI Improvement Failed", description: result.error, variant: 'destructive' });
+        setIsImproveDialogOpen(false);
     } else if ('improvedAdCopy' in result) {
         setAiSuggestions(result);
     }
@@ -223,6 +226,7 @@ export default function EditAdPage() {
     if (aiSuggestions) {
         form.setValue('content', aiSuggestions.improvedAdCopy, { shouldValidate: true });
         toast({ title: 'AI Suggestions Applied!', description: 'The ad content has been updated.' });
+        setIsImproveDialogOpen(false);
     }
   };
 
@@ -432,10 +436,10 @@ export default function EditAdPage() {
                         </AlertDialogContent>
                     </AlertDialog>
                 )}
-                 <Dialog onOpenChange={(open) => !open && setAiSuggestions(null)}>
+                 <Dialog open={isImproveDialogOpen} onOpenChange={(open) => { setIsImproveDialogOpen(open); if (!open) setAiSuggestions(null); }}>
                     <DialogTrigger asChild>
                         <Button type="button" variant="outline" onClick={handleImproveWithAI} className="bg-secondary/20 text-secondary-foreground border-secondary/30 hover:bg-secondary/30">
-                            {isImproving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" /> }
+                            {isImproving && !aiSuggestions ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" /> }
                             Improve with AI
                         </Button>
                     </DialogTrigger>
@@ -444,7 +448,7 @@ export default function EditAdPage() {
                             <DialogTitle className="font-headline text-2xl flex items-center gap-2"><Sparkles className="h-6 w-6 text-primary" /> AI-Powered Improvements</DialogTitle>
                             <DialogDescription>Here are suggestions based on your ad content to make your ad even better.</DialogDescription>
                         </DialogHeader>
-                        {isImproving ? (
+                        {isImproving && !aiSuggestions ? (
                              <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>
                         ) : aiSuggestions ? (
                             <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-4">
