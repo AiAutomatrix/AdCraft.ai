@@ -25,6 +25,7 @@ import { useEffect } from 'react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { motion } from 'framer-motion';
 import { useUser } from '@/firebase';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 
 function formatDate(timestamp: any): string {
     if (!timestamp) return 'N/A';
@@ -196,9 +197,23 @@ export default function SavedAdsPage() {
             transition={{ duration: 0.5, delay: i * 0.05 }}
           >
             <Card className="flex flex-col overflow-hidden h-full bg-surface-2 border-border/50 transition-all duration-300 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1">
-              <div className="aspect-video bg-surface-1 flex items-center justify-center relative">
+              <div className="aspect-video bg-surface-1 flex items-center justify-center relative group">
                   {ad.images && ad.images.length > 0 ? (
-                      <Image src={ad.images[0]} alt={ad.title} layout="fill" objectFit="cover" />
+                      <Carousel className="w-full h-full">
+                          <CarouselContent>
+                              {ad.images.map((image, index) => (
+                                <CarouselItem key={index}>
+                                    <Image src={image} alt={`${ad.title} - image ${index + 1}`} layout="fill" objectFit="cover" />
+                                </CarouselItem>
+                              ))}
+                          </CarouselContent>
+                          {ad.images.length > 1 && (
+                            <>
+                                <CarouselPrevious className="absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <CarouselNext className="absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </>
+                          )}
+                      </Carousel>
                   ) : (
                       getPlaceholderIcon(ad.type)
                   )}
