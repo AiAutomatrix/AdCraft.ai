@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, useMemo } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -19,9 +19,10 @@ import type { Ad } from '@/lib/types';
 import { suggestAdImprovementsAction } from '@/lib/actions';
 import { useUser } from '@/firebase';
 import { processImage } from '@/lib/image-utils';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 
 
-import { ArrowLeft, Copy, Loader2, Save, Sparkles, Trash2, Wand2, Upload, X, Search, Briefcase, PlusCircle } from 'lucide-react';
+import { ArrowLeft, Copy, Loader2, Save, Sparkles, Trash2, Wand2, Upload, X, Search, Briefcase, PlusCircle, LayoutGrid, RectangleHorizontal } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -71,6 +72,7 @@ export default function EditAdPage() {
   const [isProcessingImage, setIsProcessingImage] = useState(false);
   const [isImproveDialogOpen, setIsImproveDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('edit');
+  const [imageView, setImageView] = useState<'grid' | 'carousel'>('grid');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -282,7 +284,7 @@ export default function EditAdPage() {
   const adTitle = form.watch('title');
 
   return (
-    <div className="container py-12 max-w-6xl">
+    <div className="container py-6 max-w-6xl">
         <Button variant="ghost" onClick={() => router.back()} className="mb-4">
             <ArrowLeft className="mr-2 h-4 w-4" /> Back
         </Button>
@@ -291,10 +293,32 @@ export default function EditAdPage() {
             <div className="grid md:grid-cols-2 gap-8">
                 {adAllowsImages ? (
                      <Card>
-                     <CardHeader>
-                       <CardTitle className="font-headline text-2xl">Images</CardTitle>
-                       <CardDescription>Upload one or more images for your ad. Large files are resized.</CardDescription>
-                     </CardHeader>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <div>
+                                <CardTitle className="font-headline text-2xl">Images</CardTitle>
+                                <CardDescription>Manage images for your ad.</CardDescription>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setImageView(imageView === 'grid' ? 'carousel' : 'grid')}
+                                    disabled={!ad.images || ad.images.length === 0}
+                                >
+                                    {imageView === 'grid' ? <RectangleHorizontal className="h-5 w-5" /> : <LayoutGrid className="h-5 w-5" />}
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    disabled={isSaving || isProcessingImage}
+                                >
+                                    {isProcessingImage ? <Loader2 className="h-5 w-5 animate-spin" /> : <Upload className="h-5 w-5" />}
+                                </Button>
+                            </div>
+                        </CardHeader>
                      <CardContent>
                        <input
                          type="file"
@@ -305,43 +329,65 @@ export default function EditAdPage() {
                          className="hidden"
                          disabled={isSaving || isProcessingImage}
                        />
-                       <div className="grid grid-cols-3 gap-4">
-                         {(ad.images || []).map((image, index) => (
-                           <div key={index} className="relative group aspect-square">
-                             <Image
-                               src={image}
-                               alt={`Ad image ${index + 1}`}
-                               fill
-                               className="rounded-md object-cover"
-                             />
-                             <Button
-                               type="button"
-                               variant="destructive"
-                               size="icon"
-                               className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                               onClick={() => removeImage(index)}
-                               disabled={isSaving}
-                             >
-                               <X className="h-4 w-4" />
-                             </Button>
-                           </div>
-                         ))}
-                         <button
-                           type="button"
-                           onClick={() => fileInputRef.current?.click()}
-                           disabled={isSaving || isProcessingImage}
-                           className="aspect-square border-2 border-dashed border-border rounded-md flex flex-col items-center justify-center text-muted-foreground hover:bg-muted/50 hover:border-primary transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-                         >
-                           {isProcessingImage ? (
-                             <Loader2 className="h-8 w-8 animate-spin" />
-                           ) : (
-                             <>
-                               <PlusCircle className="h-8 w-8" />
-                               <span className="text-sm mt-2">Add Image</span>
-                             </>
-                           )}
-                         </button>
-                       </div>
+                        {(!ad.images || ad.images.length === 0) ? (
+                            <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-border rounded-lg bg-muted/20">
+                                 <ImageIcon className="w-24 h-24 text-muted-foreground/50" />
+                                 <p className="text-muted-foreground mt-2">No images yet.</p>
+                                 <p className="text-sm text-muted-foreground">Click the upload icon to add some.</p>
+                            </div>
+                        ) : imageView === 'grid' ? (
+                            <div className="grid grid-cols-3 gap-4">
+                                {(ad.images || []).map((image, index) => (
+                                <div key={index} className="relative group aspect-square">
+                                    <Image
+                                    src={image}
+                                    alt={`Ad image ${index + 1}`}
+                                    fill
+                                    className="rounded-md object-cover"
+                                    />
+                                    <Button
+                                    type="button"
+                                    variant="destructive"
+                                    size="icon"
+                                    className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={() => removeImage(index)}
+                                    disabled={isSaving}
+                                    >
+                                    <X className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <Carousel className="w-full">
+                                <CarouselContent>
+                                    {(ad.images || []).map((image, index) => (
+                                    <CarouselItem key={index}>
+                                        <div className="relative aspect-video">
+                                            <Image
+                                                src={image}
+                                                alt={`Ad image ${index + 1}`}
+                                                fill
+                                                className="rounded-md object-cover"
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="destructive"
+                                                size="icon"
+                                                className="absolute top-2 right-2 h-7 w-7"
+                                                onClick={() => removeImage(index)}
+                                                disabled={isSaving}
+                                            >
+                                                <X className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </CarouselItem>
+                                    ))}
+                                </CarouselContent>
+                                <CarouselPrevious className="left-2" />
+                                <CarouselNext className="right-2" />
+                            </Carousel>
+                        )}
                      </CardContent>
                    </Card>
                 ) : (
