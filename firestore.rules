@@ -15,17 +15,19 @@ service cloud.firestore {
 
     // Rules for the 'users' collection
     match /users/{userId} {
-      // Users can only read and write their own user document
-      allow read, update, delete: if isOwner(userId);
+      // Anyone can read a user's profile information
+      allow read: if true;
+      // Users can only write their own user document
+      allow update, delete: if isOwner(userId);
       // Anyone can create a user document (on signup)
       allow create: if request.auth != null;
 
       // Rules for the 'ads' subcollection within a user's document
       match /ads/{adId} {
-        // Allow a user to list their own ads.
-        allow list: if isOwner(userId);
-        // Allow read, update, delete on individual ads only if the user is the owner.
-        allow read, update, delete: if isOwner(userId);
+        // Allow anyone to list and read ads.
+        allow list, read: if true;
+        // Allow update and delete only if the user is the owner.
+        allow update, delete: if isOwner(userId);
         // Allow creating an ad if the ad data belongs to the user.
         allow create: if isCreatingAdForSelf(userId);
       }

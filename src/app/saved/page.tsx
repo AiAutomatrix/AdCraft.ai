@@ -7,7 +7,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowRight, Car, Copy, Edit, FilePlus, Loader2, MoreVertical, Search, Share2, Trash2, Package, Briefcase } from 'lucide-react';
+import { ArrowRight, Car, Copy, Edit, FilePlus, Loader2, MoreVertical, Search, Share2, Trash2, Package, Briefcase, UserSquare } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -79,6 +79,16 @@ export default function SavedAdsPage() {
 
   const handleEdit = (adId: string) => {
     router.push(`/edit/${adId}`);
+  };
+
+  const handleShareProfile = () => {
+    if (!user) return;
+    const profileUrl = `${window.location.origin}/profile/${user.uid}`;
+    navigator.clipboard.writeText(profileUrl);
+    toast({
+      title: 'Profile URL Copied!',
+      description: 'Your public ad page link is ready to be shared.',
+    });
   };
 
 
@@ -181,12 +191,18 @@ export default function SavedAdsPage() {
                 <h1 className="font-headline text-4xl font-bold tracking-tight sm:text-5xl">My Saved Ads</h1>
                 <p className="mt-2 text-text-secondary">Here are all the ads you've crafted.</p>
             </div>
-            <Button asChild className="font-semibold hidden sm:flex">
-                <Link href="/create">
-                    <FilePlus className="mr-2 h-4 w-4" />
-                    Create New Ad
-                </Link>
-            </Button>
+            <div className='hidden sm:flex items-center gap-2'>
+              <Button onClick={handleShareProfile} variant="secondary" className="font-semibold">
+                <UserSquare className="mr-2 h-4 w-4" />
+                Share Profile
+              </Button>
+              <Button asChild className="font-semibold">
+                  <Link href="/create">
+                      <FilePlus className="mr-2 h-4 w-4" />
+                      Create New Ad
+                  </Link>
+              </Button>
+            </div>
       </div>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {sortedAds.map((ad, i) => (
