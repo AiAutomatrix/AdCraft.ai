@@ -163,7 +163,7 @@ const AdCard = ({ ad }: { ad: Ad }) => {
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen} asChild>
-      <Card className="flex flex-col overflow-hidden h-full bg-surface-2 border-border/50">
+      <Card className="flex flex-col overflow-hidden h-full bg-surface-2 border-border/50 break-inside-avoid">
         <div className="bg-surface-1 flex items-center justify-center group">
           {ad.images && ad.images.length > 0 ? (
             <Carousel className="w-full h-full">
@@ -381,7 +381,7 @@ export default function UserProfilePage() {
           </p>
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 items-start">
+        <div className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6">
           {sortedAds.map((ad, i) => (
             <motion.div
               key={ad.id}
@@ -397,3 +397,5 @@ export default function UserProfilePage() {
     </motion.div>
   );
 }
+
+    
