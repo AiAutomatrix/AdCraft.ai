@@ -22,7 +22,7 @@ import { processImage } from '@/lib/image-utils';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 
 
-import { ArrowLeft, Copy, Loader2, Save, Sparkles, Trash2, Wand2, Upload, X, Search, Briefcase, PlusCircle, LayoutGrid, RectangleHorizontal } from 'lucide-react';
+import { ArrowLeft, Copy, Loader2, Save, Sparkles, Trash2, Wand2, Upload, X, Search, Briefcase, PlusCircle, LayoutGrid, RectangleHorizontal, Image as ImageIcon } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,6 +38,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { cn } from '@/lib/utils';
 
 
 const adSchema = z.object({
@@ -103,7 +104,7 @@ export default function EditAdPage() {
       try {
         const parsedData = JSON.parse(newAdDataString);
         adDataToSet = {
-          id: parsedData.id || uuidv4(), // Ensure ID exists
+          id: parsedData.id,
           createdAt: new Date().toISOString(),
           ...parsedData,
         };
@@ -290,8 +291,8 @@ export default function EditAdPage() {
         </Button>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            <div className="grid md:grid-cols-2 gap-8">
-                {adAllowsImages ? (
+            <div className={cn("grid gap-8", activeTab === 'edit' && 'md:grid-cols-2')}>
+                {adAllowsImages && activeTab === 'edit' && (
                      <Card>
                         <CardHeader className="flex flex-row items-center justify-between">
                             <div>
@@ -390,7 +391,8 @@ export default function EditAdPage() {
                         )}
                      </CardContent>
                    </Card>
-                ) : (
+                )}
+                {!adAllowsImages && activeTab === 'edit' && (
                   <Card>
                     <CardHeader>
                         <CardTitle className="font-headline text-2xl">Image</CardTitle>
@@ -450,7 +452,30 @@ export default function EditAdPage() {
                                 )}
                             />
                         </TabsContent>
-                        <TabsContent value="preview" className="prose dark:prose-invert prose-sm max-w-none min-h-[354px] rounded-md border bg-card p-4">
+                        <TabsContent value="preview" className="prose dark:prose-invert prose-sm max-w-none rounded-md border bg-card p-4">
+                            {adAllowsImages && ad.images && ad.images.length > 0 && (
+                                <Carousel className="w-full mb-4 -mt-2">
+                                    <CarouselContent>
+                                        {ad.images.map((image, index) => (
+                                            <CarouselItem key={index}>
+                                                <Image
+                                                    src={image}
+                                                    alt={`Ad image ${index + 1}`}
+                                                    width={600}
+                                                    height={400}
+                                                    className="rounded-md object-cover w-full aspect-video"
+                                                />
+                                            </CarouselItem>
+                                        ))}
+                                    </CarouselContent>
+                                    {ad.images.length > 1 && (
+                                        <>
+                                            <CarouselPrevious className="left-2" />
+                                            <CarouselNext className="right-2" />
+                                        </>
+                                    )}
+                                </Carousel>
+                            )}
                             <h2 className="font-headline text-2xl mt-0">{adTitle}</h2>
                             <ReactMarkdown>{adContent}</ReactMarkdown>
                         </TabsContent>
