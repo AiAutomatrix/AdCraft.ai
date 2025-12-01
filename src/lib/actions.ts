@@ -5,7 +5,6 @@ import { generateItemAdFromImage, GenerateItemAdFromImageInput } from '@/ai/flow
 import { generateServiceAdFromText, GenerateServiceAdFromTextInput } from '@/ai/flows/generate-service-ad-from-text';
 import { generateWantedAd } from '@/ai/flows/generate-wanted-ad';
 import { suggestAdImprovements, SuggestAdImprovementsInput } from '@/ai/flows/suggest-ad-improvements';
-import { generateAdTitle, GenerateAdTitleInput } from '@/ai/flows/generate-ad-title';
 import { generateSaleAdFromText, GenerateSaleAdFromTextInput } from '@/ai/flows/generate-sale-ad-from-text';
 
 // Action to generate a vehicle sale ad from an image
@@ -73,15 +72,4 @@ export async function suggestAdImprovementsAction(input: SuggestAdImprovementsIn
     console.error('Error in suggestAdImprovementsAction:', error);
     return { error: 'Failed to get suggestions. The AI model might be unavailable.' };
   }
-}
-
-// Action to generate an ad title from content
-export async function generateAdTitleAction(input: GenerateAdTitleInput) {
-    try {
-      const result = await generateAdTitle(input);
-      return result;
-    } catch (error) {
-      console.error('Error in generateAdTitleAction:', error);
-      return { error: 'Failed to generate ad title. The AI model might be unavailable.' };
-    }
 }

@@ -17,12 +17,12 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useFirestoreAds } from '@/hooks/use-firestore-ads';
 import { useToast } from '@/hooks/use-toast';
 import type { Ad } from '@/lib/types';
-import { suggestAdImprovementsAction, generateAdTitleAction } from '@/lib/actions';
+import { suggestAdImprovementsAction } from '@/lib/actions';
 import { useUser } from '@/firebase';
 import { processImage } from '@/lib/image-utils';
 
 
-import { ArrowLeft, Copy, Loader2, Save, Sparkles, Trash2, Wand2, RefreshCw, Upload, X, Search, Package, Briefcase, Car } from 'lucide-react';
+import { ArrowLeft, Copy, Loader2, Save, Sparkles, Trash2, Wand2, Upload, X, Search, Briefcase } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -66,7 +66,6 @@ export default function EditAdPage() {
   
   const [aiSuggestions, setAiSuggestions] = useState<AISuggestions | null>(null);
   const [isImproving, setIsImproving] = useState(false);
-  const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [initialDataLoaded, setInitialDataLoaded] = useState(false);
   const [isProcessingImage, setIsProcessingImage] = useState(false);
@@ -210,26 +209,6 @@ export default function EditAdPage() {
         setAiSuggestions(result);
     }
     setIsImproving(false);
-  };
-
-  const handleGenerateTitle = async () => {
-    if (!ad) return;
-    setIsGeneratingTitle(true);
-    const currentValues = form.getValues();
-    const inputForAI = {
-        adContent: currentValues.content,
-        adType: ad.type,
-    };
-    console.log('Client: Generating title with input:', inputForAI);
-    const result = await generateAdTitleAction(inputForAI);
-
-    if (result.error) {
-        toast({ title: "Title Generation Failed", description: result.error, variant: 'destructive' });
-    } else if (result.title) {
-        form.setValue('title', result.title, { shouldValidate: true });
-        toast({ title: 'New Title Generated!', description: 'The ad title has been updated.' });
-    }
-    setIsGeneratingTitle(false);
   };
   
   const applyAISuggestions = () => {
@@ -392,10 +371,6 @@ export default function EditAdPage() {
                                 <FormItem className='mb-4'>
                                     <div className="flex justify-between items-center">
                                         <FormLabel className="text-lg">Ad Title</FormLabel>
-                                        <Button type="button" size="sm" variant="ghost" onClick={handleGenerateTitle} disabled={isGeneratingTitle}>
-                                            {isGeneratingTitle ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                                            Generate
-                                        </Button>
                                     </div>
                                     <FormControl>
                                     <Input placeholder="e.g., For Sale: 2020 Ford Mustang" {...field} className="text-base" />
@@ -411,7 +386,7 @@ export default function EditAdPage() {
                                 <FormItem>
                                     <FormLabel className="sr-only">Ad Content</FormLabel>
                                     <FormControl>
-                                    <Textarea placeholder="Your ad copy will appear here..." {...field} className="min-h-[250px] text-base" />
+                                    <Textarea placeholder="Your ad copy will appear here..." {...field} className="min-h-[300px] text-base" />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
