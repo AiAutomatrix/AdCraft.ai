@@ -41,8 +41,8 @@ const generateAdPrompt = ai.definePrompt({
   output: {schema: GenerateAdFromImageOutputSchema},
   prompt: `You are an expert in creating compelling vehicle advertisements.
 
-  Based on the image and whether the user wants to sell or buy a vehicle, generate a compelling, descriptive title and a full ad text formatted in Markdown.
-  The generated ad should be concise, attention-grabbing, and highlight the key features and benefits of the vehicle.
+  Analyse Details Based on the image and whether the user wants to sell or buy a vehicle, generate a compelling, descriptive title and a full ad text formatted in valid Markdown with proper spacing.
+  The generated ad should be concise,car dealership quality, attention-grabbing, and highlight the key features and benefits of the vehicle. 
 
   The ad should be tailored to the following ad type: {{{adType}}}
   Here is the image of the vehicle: {{media url=photoDataUri}}`,
