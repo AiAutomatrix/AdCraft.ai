@@ -202,7 +202,7 @@ export default function EditAdPage() {
     const currentValues = form.getValues();
     const result = await suggestAdImprovementsAction({
         adCopy: currentValues.content,
-        adType: ad.type as 'sale' | 'wanted', // API expects specific enum
+        adType: ad.type,
     });
 
     if (result.error) {
@@ -275,8 +275,6 @@ export default function EditAdPage() {
     });
   };
 
-  const adAllowsImages = ad?.type === 'sale' || ad?.type === 'item' || ad?.type === 'service';
-
   if (adsLoading || isUserLoading || !initialDataLoaded || !ad) {
     return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
@@ -284,7 +282,7 @@ export default function EditAdPage() {
   const adContent = form.watch('content');
   const adTitle = form.watch('title');
   
-  const showImageManager = adAllowsImages && activeTab === 'edit';
+  const showImageManager = (ad?.type === 'sale' || ad?.type === 'item' || ad?.type === 'service') && activeTab === 'edit';
 
   return (
     <div className="container max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -441,7 +439,7 @@ export default function EditAdPage() {
                             />
                         </TabsContent>
                         <TabsContent value="preview" className="prose dark:prose-invert prose-sm max-w-none rounded-md border bg-card p-4 min-h-[398px]">
-                            {adAllowsImages && ad.images && ad.images.length > 0 && (
+                            {ad.images && ad.images.length > 0 && (
                                 <Carousel className="w-full mb-4 -mt-2">
                                     <CarouselContent>
                                         {ad.images.map((image, index) => (
@@ -512,7 +510,7 @@ export default function EditAdPage() {
                                 <div>
                                     <h3 className="font-semibold mb-2">Suggested New Version:</h3>
                                     <blockquote className="border-l-2 border-primary pl-4 py-2 bg-surface-2 rounded-r-md">
-                                        <p className="text-sm text-foreground">{aiSuggestions.improvedAdCopy}</p>
+                                        <ReactMarkdown className="prose prose-sm dark:prose-invert max-w-none">{aiSuggestions.improvedAdCopy}</ReactMarkdown>
                                     </blockquote>
                                 </div>
                                 <Separator />
