@@ -108,7 +108,7 @@ export default function EditAdPage() {
           createdAt: new Date().toISOString(),
           ...parsedData,
         };
-        setActiveTab('edit');
+        setActiveTab('preview');
       } catch (e) {
         console.error("Failed to parse ad data from session storage", e);
         toast({ title: 'Error loading ad data', variant: 'destructive' });
@@ -120,7 +120,7 @@ export default function EditAdPage() {
             const existingAd = ads.find(a => a.id === id);
             if (existingAd) {
                 adDataToSet = existingAd;
-                setActiveTab(existingAd.images && existingAd.images.length > 0 ? 'preview' : 'edit');
+                setActiveTab('preview');
             } else if (!isCreatingNewAd) { // Only show not found if it's not a new ad being created
                 toast({ title: 'Ad not found', variant: 'destructive' });
                 router.replace('/saved');
@@ -282,14 +282,14 @@ export default function EditAdPage() {
   const adContent = form.watch('content');
   const adTitle = form.watch('title');
   
-  const showImageManager = (ad?.type === 'sale' || ad?.type === 'item' || ad?.type === 'service') && activeTab === 'edit';
+  const showImageManager = (ad?.type === 'sale' || ad?.type === 'item' || ad?.type === 'service');
 
   return (
     <div className="container max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            <div className={cn("grid gap-8", showImageManager && "md:grid-cols-2")}>
-                {showImageManager && (
+            <div className={cn("grid gap-8", showImageManager && activeTab === 'edit' && "md:grid-cols-2")}>
+                {showImageManager && activeTab === 'edit' && (
                      <Card>
                         <CardHeader className="flex flex-row items-center justify-between">
                             <div>
@@ -390,7 +390,7 @@ export default function EditAdPage() {
                    </Card>
                 )}
                 
-                <Card className={cn(!showImageManager && "md:col-span-2")}>
+                <Card className={cn(showImageManager && activeTab === 'edit' ? "md:col-span-1" : "md:col-span-2")}>
                     <CardHeader>
                         <div className="flex justify-between items-start">
                             <div>
