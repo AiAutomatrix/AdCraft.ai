@@ -1,10 +1,8 @@
 #!/bin/bash
 
-# A script to test uploading a file to your Firebase Storage bucket.
-
 # --- Configuration ---
-# Your Firebase Storage bucket name, found in firebase/config.ts
-BUCKET_NAME="studio-494843406-f3e2e.appspot.com"
+# Your Firebase Storage bucket name, found in your Firebase project.
+BUCKET_NAME="studio-494843406-f3e2e.firebasestorage.app"
 # A public URL for a test image
 IMAGE_URL="https://images.unsplash.com/photo-1568605114967-8130f3a36994"
 # The name we'll give the downloaded file locally
