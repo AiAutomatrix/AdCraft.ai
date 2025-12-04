@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { signOut, type Auth } from 'firebase/auth';
-import { LogOut, Loader2 } from 'lucide-react';
+import { LogOut, Loader2, User } from 'lucide-react';
 
 function handleSignOut(auth: Auth) {
   signOut(auth);
@@ -71,6 +71,12 @@ export function AuthButton() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href={`/profile/${user.uid}`}>
+            <User className="mr-2 h-4 w-4" />
+            <span>My Public Profile</span>
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={() => auth && handleSignOut(auth)}>
           <LogOut className="mr-2 h-4 w-4" />
           <span>Log out</span>
