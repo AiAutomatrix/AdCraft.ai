@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -13,15 +14,17 @@ import {z} from 'genkit';
 
 const SuggestAdImprovementsInputSchema = z.object({
   adCopy: z.string().describe('The current ad copy to improve.'),
-  adType: z.enum(['sale', 'wanted', 'item', 'service']).describe('The type of ad (sale, wanted, item, or service).'),
+  adType: z
+    .enum(['sale', 'wanted', 'item', 'service', 'real-estate'])
+    .describe('The type of ad (sale, wanted, item, service, or real-estate).'),
 });
 export type SuggestAdImprovementsInput = z.infer<
   typeof SuggestAdImprovementsInputSchema
 >;
 
 const SuggestAdImprovementsOutputSchema = z.object({
-  improvedAdCopy: z.string().describe('The improved ad copy, formatted in Markdown.'),
-  suggestions: z.array(z.string()).describe('A list of suggestions for the ad copy.'),
+  improvedAdCopy: z.string().describe('The improved ad copy, formatted in valid Markdown.'),
+  suggestions: z.array(z.string()).describe('A list of specific, actionable suggestions for improving the ad copy.'),
 });
 export type SuggestAdImprovementsOutput = z.infer<
   typeof SuggestAdImprovementsOutputSchema
@@ -37,7 +40,8 @@ const prompt = ai.definePrompt({
   name: 'suggestAdImprovementsPrompt',
   input: {schema: SuggestAdImprovementsInputSchema},
   output: {schema: SuggestAdImprovementsOutputSchema},
-  prompt: `You are an expert ad copywriter. Given the following ad copy and ad type, suggest improvements to make it more effective. The improved ad copy should be persuasive, grammatically correct, formatted in Markdown, and highlight key selling points or desired characteristics.
+  prompt: `You are an expert ad copywriter. Given the following ad copy and ad type, suggest improvements to make it more effective.
+The improved ad copy must be persuasive, grammatically correct, and formatted in valid Markdown. It should highlight key selling points or desired characteristics.
 
 Ad Type: {{adType}}
 Ad Copy: {{{adCopy}}}
