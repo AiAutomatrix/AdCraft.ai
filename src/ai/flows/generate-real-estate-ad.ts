@@ -3,7 +3,7 @@
 /**
  * @fileOverview This file defines a Genkit flow for generating real estate ads.
  *
- * - generateRealEstateAd - A function that takes public image URLs of a property
+ * - generateRealEstateAd - A function that takes image data URIs of a property
  *   and generates a draft real estate advertisement.
  * - GenerateRealEstateAdInput - The input type for the function.
  * - GenerateRealEstateAdOutput - The return type for the function.
@@ -13,10 +13,10 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const GenerateRealEstateAdInputSchema = z.object({
-  photoUrls: z
-    .array(z.string().url())
+  photoDataUris: z
+    .array(z.string())
     .describe(
-      "A list of public URLs for photos of the property."
+      "A list of photos of the property, each as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
 });
 
@@ -46,7 +46,7 @@ const generateAdPrompt = ai.definePrompt({
   Analyze the style (e.g., modern, colonial, ranch) and condition of the property to create a persuasive and attractive listing.
 
   Here are the images of the property:
-  {{#each photoUrls}}
+  {{#each photoDataUris}}
   {{media url=this}}
   {{/each}}
   `,

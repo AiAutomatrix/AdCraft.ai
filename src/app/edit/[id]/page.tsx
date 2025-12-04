@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
@@ -150,16 +151,19 @@ export default function EditAdPage() {
     if (!user || !ad) return;
     
     setIsSaving(true);
-    const adId = ad.id;
     
     try {
       const adToSave: Ad = {
         ...ad,
-        id: adId,
         title: data.title,
         content: data.content,
         userId: user.uid,
       };
+
+      toast({
+        title: 'Saving Ad...',
+        description: 'Uploading images and saving your ad. Please wait.',
+      });
       
       await setAd(adToSave);
       
@@ -282,7 +286,7 @@ export default function EditAdPage() {
   const adContent = form.watch('content');
   const adTitle = form.watch('title');
   
-  const showImageManager = (ad?.type === 'sale' || ad?.type === 'item' || ad?.type === 'service');
+  const showImageManager = (ad?.type === 'sale' || ad?.type === 'item' || ad?.type === 'service' || ad?.type === 'real-estate');
 
   return (
     <div className="container max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">

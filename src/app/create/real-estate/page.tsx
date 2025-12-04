@@ -12,7 +12,6 @@ import { Loader2, Wand2, Upload, X } from 'lucide-react';
 import Image from 'next/image';
 import { useUser } from '@/firebase';
 import { processImage } from '@/lib/image-utils';
-import { useFirebaseStorage } from '@/hooks/use-firebase-storage';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 
 export default function GenerateRealEstateAdPage() {
@@ -23,7 +22,6 @@ export default function GenerateRealEstateAdPage() {
   const { toast } = useToast();
   const { user, isUserLoading } = useUser();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { uploadImage, isLoading: isUploading } = useFirebaseStorage();
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -102,30 +100,22 @@ export default function GenerateRealEstateAdPage() {
     const newAdId = uuidv4();
 
     try {
-      // 1. Upload images to Firebase Storage
-      toast({ title: 'Uploading images...', description: 'Please wait while we upload your property photos.' });
-      const imageUrls = await Promise.all(
-        imagePreviews.map(dataUrl => uploadImage(dataUrl, `users/${user.uid}/ads/${newAdId}`))
-      );
-      toast({ title: 'Upload complete!', description: 'Your images have been stored securely.' });
-
-      // 2. Generate ad using the storage URLs
       toast({ title: 'Generating your ad...', description: 'Our AI is crafting the perfect description for your property.' });
       const result = await generateRealEstateAdAction({
-        photoUrls: imageUrls
+        photoDataUris: imagePreviews
       });
 
       if (result.error) {
         throw new Error(result.error);
       }
 
-      // 3. Pass data to the editor page
+      // Pass data (including data URIs) to the editor page
       sessionStorage.setItem('generatedAd_new', JSON.stringify({
         id: newAdId,
         title: result.title,
         content: result.adText,
         type: 'real-estate',
-        images: imageUrls,
+        images: imagePreviews, // Pass the data URIs
       }));
       router.push(`/edit/${newAdId}`);
 
@@ -145,15 +135,15 @@ export default function GenerateRealEstateAdPage() {
     setImagePreviews(previews => previews.filter((_, i) => i !== index));
   }
 
-  const isButtonDisabled = isGenerating || imagePreviews.length === 0 || isProcessingImage || isUploading;
-  const isUploaderDisabled = isGenerating || isProcessingImage || isUserLoading || isUploading || imagePreviews.length >= 10;
+  const isButtonDisabled = isGenerating || imagePreviews.length === 0 || isProcessingImage;
+  const isUploaderDisabled = isGenerating || isProcessingImage || isUserLoading || imagePreviews.length >= 10;
 
   return (
     <div className="container py-12">
       <Card className="max-w-2xl mx-auto">
         <CardHeader>
           <CardTitle className="font-headline text-3xl">Generate a Real Estate Ad</CardTitle>
-          <CardDescription>Upload photos of the property. Images will be stored in Firebase Storage.</CardDescription>
+          <CardDescription>Upload photos of the property. The ad will be generated and images will be saved when you finalize the ad in the editor.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-4">
@@ -184,7 +174,7 @@ export default function GenerateRealEstateAdPage() {
                                         size="icon"
                                         className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
                                         onClick={() => removeImage(index)}
-                                        disabled={isGenerating || isUploading}
+                                        disabled={isGenerating}
                                     >
                                         <X className="h-4 w-4" />
                                     </Button>
@@ -201,10 +191,10 @@ export default function GenerateRealEstateAdPage() {
                 disabled={isUploaderDisabled}
                 className="w-full h-64 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center text-muted-foreground hover:bg-muted/50 hover:border-primary transition-colors disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {isProcessingImage || isUploading ? (
+                {isProcessingImage ? (
                     <>
                         <Loader2 className="h-10 w-10 mb-2 animate-spin" />
-                        <span>{isUploading ? 'Uploading to Storage...' : 'Processing Images...'}</span>
+                        <span>Processing Images...</span>
                     </>
                 ) : (
                     <>
@@ -223,12 +213,12 @@ export default function GenerateRealEstateAdPage() {
              )}
           </div>
           <Button onClick={handleGenerate} disabled={isButtonDisabled} className="w-full font-semibold" size="lg">
-            {isGenerating || isUploading ? (
+            {isGenerating ? (
               <Loader2 className="mr-2 h-5 w-5 animate-spin" />
             ) : (
               <Wand2 className="mr-2 h-5 w-5" />
             )}
-            {isGenerating || isUploading ? (isUploading ? 'Uploading...' : 'Generating...') : 'Generate Ad'}
+            {isGenerating ? 'Generating...' : 'Generate Ad'}
           </Button>
         </CardContent>
       </Card>
