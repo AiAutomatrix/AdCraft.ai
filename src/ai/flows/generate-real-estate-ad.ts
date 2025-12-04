@@ -55,8 +55,8 @@ const generateAdPrompt = ai.definePrompt({
 const generateRealEstateAdFlow = ai.defineFlow(
   {
     name: 'generateRealEstateAdFlow',
-    inputSchema: GenerateRealestateAdInputSchema,
-    outputSchema: GenerateRealestateAdOutputSchema,
+    inputSchema: GenerateRealEstateAdInputSchema,
+    outputSchema: GenerateRealEstateAdOutputSchema,
   },
   async input => {
     const {output} = await generateAdPrompt(input);
