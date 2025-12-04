@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef } from 'react';
@@ -7,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { generateItemAdFromImageAction } from '@/lib/actions';
-import { Loader2, Wand2, Upload, X, Camera } from 'lucide-react';
+import { Loader2, Wand2, Upload, X, Camera, Package } from 'lucide-react';
 import Image from 'next/image';
 import { useUser } from '@/firebase';
 import { processImage } from '@/lib/image-utils';
@@ -275,4 +276,6 @@ export default function GenerateItemAdPage() {
     </div>
   );
 }
+    
+
     
