@@ -1,14 +1,16 @@
+
 'use client';
 
 import Link from 'next/link';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { ArrowLeft, Menu, Sparkles } from 'lucide-react';
+import { ArrowLeft, Menu, Sparkles, User } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Logo } from '../icons';
 import { AuthButton } from './auth-button';
+import { useUser } from '@/firebase';
 
 const navLinks = [
   { href: '/create', label: 'Create Ad' },
@@ -20,6 +22,7 @@ export function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const { user } = useUser();
 
   const handleLinkClick = () => {
     setIsSheetOpen(false);
@@ -63,6 +66,21 @@ export function Header() {
                     </SheetHeader>
                     
                     <div className="flex flex-col space-y-3 pt-6">
+                        {user && (
+                            <Link
+                                href={`/profile/${user.uid}`}
+                                onClick={handleLinkClick}
+                                className={cn(
+                                    'text-lg transition-colors hover:text-foreground/80 flex items-center',
+                                    pathname === `/profile/${user.uid}`
+                                    ? 'text-foreground'
+                                    : 'text-foreground/60'
+                                )}
+                            >
+                                <User className="mr-2 h-5 w-5" />
+                                My Public Profile
+                            </Link>
+                        )}
                         {navLinks.map((link) => (
                             <Link
                                 key={`mobile-${link.href}`}
@@ -76,7 +94,13 @@ export function Header() {
                                     link.href === '/premium' && 'text-accent hover:text-accent/80'
                                 )}
                             >
-                                {link.label}
+                                {link.label === 'Go Premium' ? (
+                                    <span className="flex items-center gap-1">
+                                        <Sparkles className="h-5 w-5" /> {link.label}
+                                    </span>
+                                ) : (
+                                    link.label
+                                )}
                             </Link>
                         ))}
                     </div>
