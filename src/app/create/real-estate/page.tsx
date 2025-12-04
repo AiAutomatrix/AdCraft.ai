@@ -7,20 +7,35 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { generateRealEstateAdAction } from '@/lib/actions';
-import { Loader2, Wand2, Upload, X } from 'lucide-react';
+import { Loader2, Wand2, Upload, X, Camera, Home } from 'lucide-react';
 import Image from 'next/image';
 import { useUser } from '@/firebase';
 import { processImage } from '@/lib/image-utils';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { CameraCapture } from '@/components/camera/camera-capture';
 
 export default function GenerateRealEstateAdPage() {
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isProcessingImage, setIsProcessingImage] = useState(false);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
   const { user, isUserLoading } = useUser();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const addImageToPreviews = (imageDataUri: string) => {
+    if (imagePreviews.length >= 10) {
+      toast({
+        title: 'Too many images',
+        description: 'You can upload a maximum of 10 images.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    setImagePreviews(prev => [...prev, imageDataUri]);
+  };
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -141,7 +156,7 @@ export default function GenerateRealEstateAdPage() {
       <Card className="max-w-2xl mx-auto">
         <CardHeader>
           <CardTitle className="font-headline text-3xl">Generate a Real Estate Ad</CardTitle>
-          <CardDescription>Upload photos of the property. The ad will be generated and images will be saved when you finalize the ad in the editor.</CardDescription>
+          <CardDescription>Upload photos of the property, or use your camera. Images will be saved when you finalize the ad.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-4">
@@ -184,30 +199,68 @@ export default function GenerateRealEstateAdPage() {
                     <CarouselNext className="right-2" />
                 </Carousel>
             ) : (
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploaderDisabled}
-                className="w-full h-64 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center text-muted-foreground hover:bg-muted/50 hover:border-primary transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isProcessingImage ? (
-                    <>
-                        <Loader2 className="h-10 w-10 mb-2 animate-spin" />
-                        <span>Processing Images...</span>
-                    </>
-                ) : (
-                    <>
-                        <Upload className="h-10 w-10 mb-2" />
-                        <span>Click to upload photos</span>
-                        <span className="text-sm">PNG, JPG, or WEBP (Up to 10 images)</span>
-                    </>
-                )}
-              </button>
+                <div className="w-full h-64 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center text-muted-foreground bg-muted/20">
+                    {isProcessingImage ? (
+                        <>
+                            <Loader2 className="h-10 w-10 mb-2 animate-spin" />
+                            <span>Processing Images...</span>
+                        </>
+                    ) : (
+                        <>
+                            <Home className="h-12 w-12 mb-2" />
+                            <p className="font-semibold mb-2">Add photos of the property</p>
+                            <div className="flex gap-2">
+                                <Button type="button" onClick={() => fileInputRef.current?.click()} disabled={isUploaderDisabled}>
+                                    <Upload className="mr-2 h-4 w-4" />
+                                    Upload
+                                </Button>
+                                <Dialog open={isCameraOpen} onOpenChange={setIsCameraOpen}>
+                                    <DialogTrigger asChild>
+                                        <Button type="button" variant="outline" disabled={isUploaderDisabled}>
+                                            <Camera className="mr-2 h-4 w-4" />
+                                            Use Camera
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent className="max-w-3xl">
+                                        <CameraCapture 
+                                            onCapture={(dataUri) => {
+                                                addImageToPreviews(dataUri);
+                                                setIsCameraOpen(false);
+                                            }}
+                                            onClose={() => setIsCameraOpen(false)}
+                                        />
+                                    </DialogContent>
+                                </Dialog>
+                            </div>
+                            <span className="text-xs mt-4">Up to 10 images (PNG, JPG, WEBP)</span>
+                        </>
+                    )}
+                </div>
             )}
             {imagePreviews.length > 0 && (
-                <Button onClick={() => fileInputRef.current?.click()} disabled={isUploaderDisabled} variant="outline" className="w-full">
-                    <Upload className="mr-2 h-4 w-4" />
-                    Add More Photos ({imagePreviews.length}/10)
-                </Button>
+                <div className="flex gap-2">
+                    <Button onClick={() => fileInputRef.current?.click()} disabled={isUploaderDisabled} variant="outline" className="w-full">
+                        <Upload className="mr-2 h-4 w-4" />
+                        Add More ({imagePreviews.length}/10)
+                    </Button>
+                     <Dialog open={isCameraOpen} onOpenChange={setIsCameraOpen}>
+                        <DialogTrigger asChild>
+                            <Button variant="outline" className="w-full" disabled={isUploaderDisabled}>
+                                <Camera className="mr-2 h-4 w-4" />
+                                Use Camera
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-3xl">
+                            <CameraCapture 
+                                onCapture={(dataUri) => {
+                                    addImageToPreviews(dataUri);
+                                    setIsCameraOpen(false);
+                                }}
+                                onClose={() => setIsCameraOpen(false)}
+                            />
+                        </DialogContent>
+                    </Dialog>
+                </div>
              )}
           </div>
           <Button onClick={handleGenerate} disabled={isButtonDisabled} className="w-full font-semibold" size="lg">
@@ -223,3 +276,4 @@ export default function GenerateRealEstateAdPage() {
     </div>
   );
 }
+    
