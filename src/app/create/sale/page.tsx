@@ -80,7 +80,6 @@ export default function GenerateSaleAdPage() {
       toast({
         title: 'Please wait',
         description: 'User data is still loading. Please try again in a moment.',
-        variant: 'destructive',
       });
       return;
     }
@@ -141,7 +140,7 @@ export default function GenerateSaleAdPage() {
       <Card className="max-w-2xl mx-auto">
         <CardHeader>
           <CardTitle className="font-headline text-3xl">Generate a 'For Sale' Ad from Photos</CardTitle>
-          <CardDescription>Upload pictures of your vehicle. Large images will be automatically resized.</CardDescription>
+          <CardDescription>Upload pictures of your vehicle. The ad will be generated and images will be saved when you finalize the ad in the editor.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-4">

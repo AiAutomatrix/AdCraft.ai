@@ -139,7 +139,7 @@ export default function GenerateItemAdPage() {
       <Card className="max-w-2xl mx-auto">
         <CardHeader>
           <CardTitle className="font-headline text-3xl">Generate an 'Item for Sale' Ad</CardTitle>
-          <CardDescription>Upload pictures of your item. Large images will be automatically resized.</CardDescription>
+          <CardDescription>Upload pictures of your item. The ad will be generated and images will be saved when you finalize the ad in the editor.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-4">

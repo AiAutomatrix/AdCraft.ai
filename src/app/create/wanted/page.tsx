@@ -142,7 +142,7 @@ export default function GenerateWantedAd() {
       <Card className="max-w-2xl mx-auto">
         <CardHeader>
           <CardTitle className="font-headline text-3xl">Generate a 'Wanted' Ad</CardTitle>
-          <CardDescription>Describe what you're looking for. You can also upload reference photos.</CardDescription>
+          <CardDescription>Describe what you're looking for. You can also upload reference photos. Images will be saved when you finalize the ad in the editor.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
 

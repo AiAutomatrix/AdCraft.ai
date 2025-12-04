@@ -142,7 +142,7 @@ export default function GenerateServiceAd() {
       <Card className="max-w-2xl mx-auto">
         <CardHeader>
           <CardTitle className="font-headline text-3xl">Generate an Ad for a Service</CardTitle>
-          <CardDescription>Describe the service you offer, upload images, or both.</CardDescription>
+          <CardDescription>Describe the service you offer, upload images, or both. Images will be saved when you finalize the ad in the editor.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           
@@ -215,7 +215,7 @@ export default function GenerateServiceAd() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Service Description (Optional)</Label>
+            <Label htmlFor="description">Service Description (Optional if images are provided)</Label>
             <Textarea
               id="description"
               value={description}

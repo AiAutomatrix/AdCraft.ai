@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useRef } from 'react';
@@ -109,13 +108,12 @@ export default function GenerateRealEstateAdPage() {
         throw new Error(result.error);
       }
 
-      // Pass data (including data URIs) to the editor page
       sessionStorage.setItem('generatedAd_new', JSON.stringify({
         id: newAdId,
         title: result.title,
         content: result.adText,
         type: 'real-estate',
-        images: imagePreviews, // Pass the data URIs
+        images: imagePreviews,
       }));
       router.push(`/edit/${newAdId}`);
 
