@@ -1,3 +1,4 @@
+
 'use server';
 
 import { generateAdFromImage, GenerateAdFromImageInput } from '@/ai/flows/generate-ad-from-image';
@@ -7,6 +8,7 @@ import { generateWantedAd, GenerateWantedAdInput } from '@/ai/flows/generate-wan
 import { suggestAdImprovements, SuggestAdImprovementsInput } from '@/ai/flows/suggest-ad-improvements';
 import { generateSaleAdFromText, GenerateSaleAdFromTextInput } from '@/ai/flows/generate-sale-ad-from-text';
 import { textToSpeech, TextToSpeechInput } from '@/ai/flows/text-to-speech';
+import { generateRealEstateAd, GenerateRealEstateAdInput } from '@/ai/flows/generate-real-estate-ad';
 
 // Action to generate a vehicle sale ad from an image
 export async function generateAdFromImageAction(input: GenerateAdFromImageInput) {
@@ -83,4 +85,15 @@ export async function textToSpeechAction(input: TextToSpeechInput) {
     console.error('Error in textToSpeechAction:', error);
     return { error: 'Failed to generate audio. The AI model might be unavailable.' };
   }
+}
+
+// Action to generate a real estate ad
+export async function generateRealEstateAdAction(input: GenerateRealEstateAdInput) {
+    try {
+      const result = await generateRealEstateAd(input);
+      return result;
+    } catch (error) {
+      console.error('Error in generateRealEstateAdAction:', error);
+      return { error: 'Failed to generate real estate ad. The AI model might be unavailable.' };
+    }
 }

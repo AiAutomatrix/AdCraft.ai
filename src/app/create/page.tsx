@@ -1,5 +1,6 @@
+
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, Car, Search, Image as ImageIcon, Briefcase, Package } from 'lucide-react';
+import { ArrowRight, Car, Search, Image as ImageIcon, Briefcase, Package, Home } from 'lucide-react';
 import Link from 'next/link';
 
 export default function CreateAdPage() {
@@ -28,6 +29,12 @@ export default function CreateAdPage() {
       description: 'Generate an ad by describing the service you provide.',
       icon: <Briefcase className="h-10 w-10 text-primary mb-4" />,
     },
+    {
+      href: '/create/real-estate',
+      title: 'I want to sell real estate',
+      description: 'Generate a real estate ad using photos of the property.',
+      icon: <Home className="h-10 w-10 text-primary mb-4" />,
+    },
   ];
 
   return (
@@ -41,7 +48,7 @@ export default function CreateAdPage() {
         </p>
       </div>
 
-      <div className="mx-auto mt-12 grid max-w-5xl gap-8 sm:grid-cols-2 lg:grid-cols-2">
+      <div className="mx-auto mt-12 grid max-w-5xl gap-8 sm:grid-cols-2 lg:grid-cols-3">
         {options.map((option) => (
           <Link href={option.href} key={option.href} className="group block">
             <Card className="h-full transform transition-transform duration-300 group-hover:-translate-y-2 group-hover:shadow-2xl bg-surface-2 border-border/50 hover:border-primary/50">
