@@ -12,11 +12,11 @@ import {z} from 'genkit';
 
 const GenerateServiceAdInputSchema = z.object({
   description: z.optional(z.string()).describe('An optional text description of the service being offered.'),
-  photoDataUri: z.optional(z.string()).describe(
-    "An optional photo related to the service, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
+  photoDataUris: z.optional(z.array(z.string())).describe(
+    "Optional photos related to the service, as data URIs that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
   ),
-}).refine(data => data.description || data.photoDataUri, {
-    message: "Either a description or a photo must be provided.",
+}).refine(data => data.description || (data.photoDataUris && data.photoDataUris.length > 0), {
+    message: "Either a description or at least one photo must be provided.",
 });
 
 
@@ -41,13 +41,16 @@ const generateServiceAdPrompt = ai.definePrompt({
   output: {schema: GenerateServiceAdOutputSchema},
   prompt: `You are an expert in creating compelling advertisements for services.
 
-  Based on the user's optional description and optional image, generate a compelling, descriptive title and a full ad text formatted in Markdown.
-  At least one input, either an image or a description, will be provided. If only an image is provided, analyze it to determine the service.
+  Based on the user's optional description and optional images, generate a compelling, descriptive title and a full ad text formatted in Markdown.
+  At least one input, either an image or a description, will be provided. If only images are provided, analyze them to determine the service.
   The generated ad should be professional, clear, and highlight the key benefits and value of the service.
   
-  {{#if photoDataUri}}
-  Use the provided image as a visual reference for the service being offered.
-  Image: {{media url=photoDataUri}}
+  {{#if photoDataUris}}
+  Use the provided images as a visual reference for the service being offered.
+  Images:
+  {{#each photoDataUris}}
+  {{media url=this}}
+  {{/each}}
   {{/if}}
 
   {{#if description}}

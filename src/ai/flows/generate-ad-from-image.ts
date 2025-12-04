@@ -12,10 +12,10 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const GenerateAdFromImageInputSchema = z.object({
-  photoDataUri: z
-    .string()
+  photoDataUris: z
+    .array(z.string())
     .describe(
-      "A photo of the vehicle, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
+      "A list of photos of the vehicle, each as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
   adType: z.enum(['sell', 'want']).describe('The type of ad to generate (sell or want).'),
 });
@@ -41,11 +41,15 @@ const generateAdPrompt = ai.definePrompt({
   output: {schema: GenerateAdFromImageOutputSchema},
   prompt: `You are an expert in creating compelling vehicle advertisements.
 
-  Analyse Details Based on the image and whether the user wants to sell or buy a vehicle, generate a compelling, descriptive title and a full ad text formatted in valid Markdown with proper spacing.
+  Analyse Details Based on the provided images and whether the user wants to sell or buy a vehicle, generate a compelling, descriptive title and a full ad text formatted in valid Markdown with proper spacing.
   The generated ad should be concise,car dealership quality, attention-grabbing, and highlight the key features and benefits of the vehicle. 
 
   The ad should be tailored to the following ad type: {{{adType}}}
-  Here is the image of the vehicle: {{media url=photoDataUri}}`,
+  Here are the images of the vehicle:
+  {{#each photoDataUris}}
+  {{media url=this}}
+  {{/each}}
+  `,
 });
 
 const generateAdFromImageFlow = ai.defineFlow(

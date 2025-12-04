@@ -15,8 +15,8 @@ import {z} from 'genkit';
 
 const GenerateWantedAdInputSchema = z.object({
   description: z.string().describe('A description of the desired item or vehicle.'),
-  photoDataUri: z.optional(z.string()).describe(
-    "An optional reference photo, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
+  photoDataUris: z.optional(z.array(z.string())).describe(
+    "Optional reference photos, as data URIs that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
   ),
 });
 export type GenerateWantedAdInput = z.infer<typeof GenerateWantedAdInputSchema>;
@@ -37,11 +37,14 @@ const generateWantedAdPrompt = ai.definePrompt({
   input: {schema: GenerateWantedAdInputSchema},
   output: {schema: GenerateWantedAdOutputSchema},
   prompt: `You are an expert at writing "wanted" ads for vehicles or other items.
-  Based on the user's description and optional reference image, generate a clear, concise title and a full ad text.
+  Based on the user's description and optional reference images, generate a clear, concise title and a full ad text.
 
-  {{#if photoDataUri}}
-  Use the provided image as a visual example of what the user is looking for.
-  Image: {{media url=photoDataUri}}
+  {{#if photoDataUris}}
+  Use the provided images as a visual example of what the user is looking for.
+  Images:
+  {{#each photoDataUris}}
+  {{media url=this}}
+  {{/each}}
   {{/if}}
 
   Description of desired item: {{{description}}}

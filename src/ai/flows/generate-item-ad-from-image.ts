@@ -11,10 +11,10 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const GenerateItemAdFromImageInputSchema = z.object({
-  photoDataUri: z
-    .string()
+  photoDataUris: z
+    .array(z.string())
     .describe(
-      "A photo of the item, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
+      "Photos of the item, as data URIs that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
 });
 
@@ -39,10 +39,14 @@ const generateAdPrompt = ai.definePrompt({
   output: {schema: GenerateItemAdFromImageOutputSchema},
   prompt: `You are an expert in creating compelling advertisements for items for sale.
 
-  Based on the image provided, generate a compelling, descriptive title and a full ad text.
+  Based on the images provided, generate a compelling, descriptive title and a full ad text.
   The generated ad should be concise, attention-grabbing, and highlight the key features of the item shown.
 
-  Here is the image of the item: {{media url=photoDataUri}}`,
+  Here are the images of the item:
+  {{#each photoDataUris}}
+  {{media url=this}}
+  {{/each}}
+  `,
 });
 
 const generateItemAdFromImageFlow = ai.defineFlow(
