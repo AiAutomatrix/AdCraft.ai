@@ -23,6 +23,12 @@ export function useFirebaseStorage() {
    * @returns A promise that resolves with the public download URL of the uploaded image.
    */
   const uploadImage = async (dataUrl: string, path: string): Promise<string> => {
+    if (!storage) {
+        const err = new Error("Firebase Storage is not available. Please try again later.");
+        setError(err);
+        throw err;
+    }
+    
     setIsLoading(true);
     setError(null);
     setUploadProgress(0);
