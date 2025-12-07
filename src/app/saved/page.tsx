@@ -8,7 +8,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowRight, Car, Copy, Edit, FilePlus, Loader2, MoreVertical, Search, Share2, Trash2, Package, Briefcase, User, Filter, Home } from 'lucide-react';
+import { ArrowRight, Car, Copy, Edit, FilePlus, Loader2, MoreVertical, Search, Share2, Trash2, Package, Briefcase, User, Filter, Home, LayoutGrid, List } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -31,6 +31,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 
 function formatDate(timestamp: any): string {
     if (!timestamp) return 'N/A';
@@ -59,6 +60,7 @@ export default function SavedAdsPage() {
   const { toast } = useToast();
   const [activeFilters, setActiveFilters] = useState<Ad['type'][]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [layout, setLayout] = useState<'list' | 'grid'>('list');
   
   useEffect(() => {
     if (!user && !isUserLoading) {
@@ -237,6 +239,14 @@ export default function SavedAdsPage() {
                     />
                 </div>
                 <div className='flex items-center gap-2 w-full'>
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setLayout(layout === 'list' ? 'grid' : 'list')}
+                    >
+                        {layout === 'list' ? <LayoutGrid className="h-4 w-4" /> : <List className="h-4 w-4" />}
+                        <span className="sr-only">Toggle Layout</span>
+                    </Button>
                     <Popover>
                         <PopoverTrigger asChild>
                             <Button variant="outline" className="w-full">
@@ -301,7 +311,12 @@ export default function SavedAdsPage() {
           <p className="mt-2 text-text-secondary">No ads match your current filter or search.</p>
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className={cn(
+            "gap-6",
+            layout === 'list'
+                ? "grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                : "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+        )}>
           {sortedAndFilteredAds.map((ad, i) => (
             <motion.div
               key={ad.id}
@@ -335,62 +350,68 @@ export default function SavedAdsPage() {
                         </div>
                     )}
                 </div>
-                <CardHeader>
+                <CardHeader className={cn(layout === 'grid' && 'p-4')}>
                   <div className="flex justify-between items-start gap-4">
-                    <CardTitle className="font-headline text-xl pr-2 line-clamp-2">{ad.title}</CardTitle>
+                    <CardTitle className={cn("font-headline pr-2 line-clamp-2", layout === 'list' ? 'text-xl' : 'text-base')}>
+                        {ad.title}
+                    </CardTitle>
                     <Badge variant={getBadgeVariant(ad.type)} className="capitalize flex-shrink-0">{ad.type === 'sale' ? 'Vehicle' : ad.type}</Badge>
                   </div>
                   <CardDescription>
                     Created on {formatDate(ad.createdAt)}
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="flex-grow">
-                  <p className="text-sm text-text-secondary line-clamp-3">{ad.content}</p>
-                </CardContent>
-                <CardFooter className="flex gap-2 justify-end mt-auto pt-4 border-t border-border/50">
-                  <Button variant="outline" size="sm" onClick={() => handleEdit(ad.id)}>
-                      <Edit className="mr-2 h-4 w-4" /> Edit
-                  </Button>
-                  
-                  <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                              <MoreVertical className="h-4 w-4" />
-                          </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleShare(ad)}>
-                              <Share2 className="mr-2 h-4 w-4" />
-                              <span>Share Ad</span>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => copyAd(ad.content)}>
-                              <Copy className="mr-2 h-4 w-4" />
-                              <span>Copy Content</span>
-                          </DropdownMenuItem>
-                          <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:bg-destructive/20 focus:text-destructive">
-                                      <Trash2 className="mr-2 h-4 w-4" />
-                                      <span>Delete</span>
-                                  </DropdownMenuItem>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                              <AlertDialogHeader>
-                                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                  This action cannot be undone. This will permanently delete this ad.
-                                  </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDelete(ad.id)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
-                              </AlertDialogFooter>
-                              </AlertDialogContent>
-                          </AlertDialog>
-                      </DropdownMenuContent>
-                  </DropdownMenu>
+                {layout === 'list' && (
+                    <>
+                        <CardContent className="flex-grow">
+                        <p className="text-sm text-text-secondary line-clamp-3">{ad.content}</p>
+                        </CardContent>
+                        <CardFooter className="flex gap-2 justify-end mt-auto pt-4 border-t border-border/50">
+                        <Button variant="outline" size="sm" onClick={() => handleEdit(ad.id)}>
+                            <Edit className="mr-2 h-4 w-4" /> Edit
+                        </Button>
+                        
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                    <MoreVertical className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleShare(ad)}>
+                                    <Share2 className="mr-2 h-4 w-4" />
+                                    <span>Share Ad</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => copyAd(ad.content)}>
+                                    <Copy className="mr-2 h-4 w-4" />
+                                    <span>Copy Content</span>
+                                </DropdownMenuItem>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:bg-destructive/20 focus:text-destructive">
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            <span>Delete</span>
+                                        </DropdownMenuItem>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                        This action cannot be undone. This will permanently delete this ad.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => handleDelete(ad.id)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
 
-                </CardFooter>
+                        </CardFooter>
+                    </>
+                )}
               </Card>
             </motion.div>
           ))}

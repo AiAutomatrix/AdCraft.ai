@@ -26,6 +26,8 @@ import {
   Volume2,
   Filter,
   Home,
+  LayoutGrid,
+  List,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import {
@@ -54,6 +56,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from '@/hooks/use-toast';
 import ReactMarkdown from 'react-markdown';
 import { textToSpeechAction } from '@/lib/actions';
+import { cn } from '@/lib/utils';
 
 function formatDate(timestamp: any): string {
   if (!timestamp) return 'N/A';
@@ -81,7 +84,7 @@ type UserProfile = {
 
 const adTypes: Ad['type'][] = ['sale', 'wanted', 'item', 'service', 'real-estate'];
 
-const AdCard = ({ ad }: { ad: Ad }) => {
+const AdCard = ({ ad, layout }: { ad: Ad, layout: 'list' | 'grid' }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isReadingAloud, setIsReadingAloud] = useState(false);
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
@@ -177,6 +180,8 @@ const AdCard = ({ ad }: { ad: Ad }) => {
     }
   };
 
+  const isListLayout = layout === 'list';
+
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen} asChild>
       <Card className="flex flex-col overflow-hidden h-full bg-surface-2 border-border/50 break-inside-avoid">
@@ -210,9 +215,9 @@ const AdCard = ({ ad }: { ad: Ad }) => {
             </div>
           )}
         </div>
-        <CardHeader>
+        <CardHeader className={cn(!isListLayout && "p-4")}>
           <div className="flex justify-between items-start gap-4">
-            <CardTitle className="font-headline text-xl pr-2 line-clamp-2">
+            <CardTitle className={cn("font-headline pr-2 line-clamp-2", isListLayout ? "text-xl" : "text-base")}>
               {ad.title}
             </CardTitle>
             <Badge
@@ -224,53 +229,57 @@ const AdCard = ({ ad }: { ad: Ad }) => {
           </div>
           <CardDescription>Created on {formatDate(ad.createdAt)}</CardDescription>
         </CardHeader>
-        <CardContent className="flex-grow">
-          <div className="space-y-2">
-            {!isOpen && (
-              <p className="text-sm text-text-secondary line-clamp-3">
-                {ad.content}
-              </p>
-            )}
-            <CollapsibleContent>
-              <ReactMarkdown className="prose dark:prose-invert prose-sm max-w-none">
-                {ad.content}
-              </ReactMarkdown>
-            </CollapsibleContent>
-          </div>
-        </CardContent>
-        <CardFooter className="flex justify-between items-center mt-auto pt-4 border-t border-border/50">
-          <CollapsibleTrigger asChild>
-            <Button variant="link" className="p-0 h-auto text-xs">
-              {isOpen ? 'Read less' : 'Read more'}
-              <ChevronsUpDown className="h-3 w-3 ml-1" />
-            </Button>
-          </CollapsibleTrigger>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={handleTextToSpeech}
-              disabled={isReadingAloud && !audio}
-            >
-              {isReadingAloud && !audio ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Volume2 className="h-4 w-4" />
-              )}
-              <span className="sr-only">Read ad aloud</span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={handleShareAd}
-            >
-              <Share2 className="h-4 w-4" />
-              <span className="sr-only">Share ad</span>
-            </Button>
-          </div>
-        </CardFooter>
+        {isListLayout && (
+            <>
+            <CardContent className="flex-grow">
+              <div className="space-y-2">
+                {!isOpen && (
+                  <p className="text-sm text-text-secondary line-clamp-3">
+                    {ad.content}
+                  </p>
+                )}
+                <CollapsibleContent>
+                  <ReactMarkdown className="prose dark:prose-invert prose-sm max-w-none">
+                    {ad.content}
+                  </ReactMarkdown>
+                </CollapsibleContent>
+              </div>
+            </CardContent>
+            <CardFooter className="flex justify-between items-center mt-auto pt-4 border-t border-border/50">
+              <CollapsibleTrigger asChild>
+                <Button variant="link" className="p-0 h-auto text-xs">
+                  {isOpen ? 'Read less' : 'Read more'}
+                  <ChevronsUpDown className="h-3 w-3 ml-1" />
+                </Button>
+              </CollapsibleTrigger>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={handleTextToSpeech}
+                  disabled={isReadingAloud && !audio}
+                >
+                  {isReadingAloud && !audio ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Volume2 className="h-4 w-4" />
+                  )}
+                  <span className="sr-only">Read ad aloud</span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={handleShareAd}
+                >
+                  <Share2 className="h-4 w-4" />
+                  <span className="sr-only">Share ad</span>
+                </Button>
+              </div>
+            </CardFooter>
+            </>
+        )}
       </Card>
     </Collapsible>
   );
@@ -285,6 +294,7 @@ export default function UserProfilePage() {
   const [profileNotFound, setProfileNotFound] = useState(false);
   const [activeFilters, setActiveFilters] = useState<Ad['type'][]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [layout, setLayout] = useState<'list' | 'grid'>('list');
   const { toast } = useToast();
 
   const handleShareProfile = () => {
@@ -416,6 +426,14 @@ export default function UserProfilePage() {
                 />
             </div>
             <div className='flex gap-2'>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setLayout(layout === 'list' ? 'grid' : 'list')}
+              >
+                {layout === 'list' ? <LayoutGrid className="h-4 w-4" /> : <List className="h-4 w-4" />}
+                <span className="sr-only">Toggle Layout</span>
+              </Button>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className='w-full'>
@@ -461,15 +479,23 @@ export default function UserProfilePage() {
           </p>
         </div>
       ) : (
-        <div className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6">
+        <div
+          className={cn(
+            "gap-6",
+            layout === 'list'
+              ? "columns-1 md:columns-2 lg:columns-3 space-y-6"
+              : "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+          )}
+        >
           {sortedAndFilteredAds.map((ad, i) => (
             <motion.div
               key={ad.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: i * 0.05 }}
+              className={cn(layout === 'list' && 'break-inside-avoid')}
             >
-              <AdCard ad={ad} />
+              <AdCard ad={ad} layout={layout} />
             </motion.div>
           ))}
         </div>
