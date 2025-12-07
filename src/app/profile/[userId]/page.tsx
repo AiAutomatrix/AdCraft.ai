@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Ad } from '@/lib/types';
@@ -23,6 +24,8 @@ import {
   ChevronsUpDown,
   Share2,
   Volume2,
+  Filter,
+  Home,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import {
@@ -32,7 +35,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from '@/components/ui/carousel';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { notFound, useParams } from 'next/navigation';
 import {
@@ -40,6 +43,13 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from '@/hooks/use-toast';
 import ReactMarkdown from 'react-markdown';
 import { textToSpeechAction } from '@/lib/actions';
@@ -68,6 +78,8 @@ type UserProfile = {
   photoURL: string;
 };
 
+const adTypes: Ad['type'][] = ['sale', 'wanted', 'item', 'service', 'real-estate'];
+
 const AdCard = ({ ad }: { ad: Ad }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isReadingAloud, setIsReadingAloud] = useState(false);
@@ -81,6 +93,7 @@ const AdCard = ({ ad }: { ad: Ad }) => {
         return 'default';
       case 'wanted':
       case 'service':
+      case 'real-estate':
         return 'secondary';
       default:
         return 'outline';
@@ -99,6 +112,8 @@ const AdCard = ({ ad }: { ad: Ad }) => {
         return (
           <Briefcase className="w-16 h-16 text-text-secondary opacity-50" />
         );
+      case 'real-estate':
+        return <Home className="w-16 h-16 text-text-secondary opacity-50" />;
       default:
         return null;
     }
@@ -203,7 +218,7 @@ const AdCard = ({ ad }: { ad: Ad }) => {
               variant={getBadgeVariant(ad.type)}
               className="capitalize flex-shrink-0"
             >
-              {ad.type}
+              {ad.type === 'sale' ? 'Vehicle' : ad.type}
             </Badge>
           </div>
           <CardDescription>Created on {formatDate(ad.createdAt)}</CardDescription>
@@ -267,6 +282,7 @@ export default function UserProfilePage() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [profileNotFound, setProfileNotFound] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<Ad['type'][]>(adTypes);
   const { toast } = useToast();
 
   const handleShareProfile = () => {
@@ -275,6 +291,12 @@ export default function UserProfilePage() {
       title: 'Profile URL Copied!',
       description: 'The link to this public ad page is ready to be shared.',
     });
+  };
+
+  const handleFilterChange = (type: Ad['type'], checked: boolean) => {
+    setActiveFilters(prev => 
+      checked ? [...prev, type] : prev.filter(t => t !== type)
+    );
   };
 
   const userAdsCollection = useMemoFirebase(() => {
@@ -309,20 +331,20 @@ export default function UserProfilePage() {
     fetchUserProfile();
   }, [firestore, userId]);
 
+  const sortedAndFilteredAds = useMemo(() => {
+    return [...(ads || [])]
+      .filter(ad => activeFilters.includes(ad.type))
+      .sort((a, b) => {
+        const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
+        const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
+        if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) return 0;
+        return dateB.getTime() - dateA.getTime();
+      });
+  }, [ads, activeFilters]);
+
   if (profileNotFound) {
     notFound();
   }
-
-  const sortedAds = [...(ads || [])].sort((a, b) => {
-    const dateA = a.createdAt?.toDate
-      ? a.createdAt.toDate()
-      : new Date(a.createdAt);
-    const dateB = b.createdAt?.toDate
-      ? b.createdAt.toDate()
-      : new Date(b.createdAt);
-    if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) return 0;
-    return dateB.getTime() - dateA.getTime();
-  });
 
   const isLoading = isLoadingAds || isLoadingProfile;
 
@@ -343,7 +365,7 @@ export default function UserProfilePage() {
       transition={{ duration: 0.5 }}
       className="container max-w-screen-xl mx-auto px-4 md:px-8 py-12 md:py-16"
     >
-      <div className="flex flex-col md:flex-row justify-between items-center mb-8 md:mb-12 gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start mb-8 md:mb-12 gap-4">
         {userProfile && (
           <div className="flex items-center gap-4">
             <Avatar className="h-20 w-20">
@@ -365,24 +387,53 @@ export default function UserProfilePage() {
             </div>
           </div>
         )}
-        <Button onClick={handleShareProfile} variant="outline">
-          <Share2 className="mr-2 h-4 w-4" /> Share Profile
-        </Button>
+        <div className="flex gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline">
+                <Filter className="mr-2 h-4 w-4" /> Filter
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-56">
+              <div className="space-y-4">
+                <h4 className="font-medium leading-none">Filter Ad Types</h4>
+                <div className="grid gap-2">
+                  {adTypes.map((type) => (
+                    <div className="flex items-center space-x-2" key={type}>
+                      <Checkbox
+                        id={`filter-${type}`}
+                        checked={activeFilters.includes(type)}
+                        onCheckedChange={(checked) => handleFilterChange(type, !!checked)}
+                      />
+                      <Label htmlFor={`filter-${type}`} className="capitalize">
+                        {type === 'sale' ? 'Vehicle' : type.replace('-', ' ')}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          <Button onClick={handleShareProfile} variant="outline">
+            <Share2 className="mr-2 h-4 w-4" /> Share Profile
+          </Button>
+        </div>
       </div>
 
-      {!sortedAds || sortedAds.length === 0 ? (
+      {!sortedAndFilteredAds || sortedAndFilteredAds.length === 0 ? (
         <div className="flex flex-col justify-center items-center h-full text-center py-16 bg-surface-2 rounded-xl">
           <Package className="mx-auto h-16 w-16 text-text-secondary opacity-50" />
           <h2 className="mt-4 font-headline text-3xl font-bold">
             No Ads Found
           </h2>
           <p className="mt-2 text-text-secondary">
-            This user hasn't posted any ads yet.
+            {ads && ads.length > 0 ? "No ads match the current filter." : "This user hasn't posted any ads yet."}
           </p>
         </div>
       ) : (
         <div className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6">
-          {sortedAds.map((ad, i) => (
+          {sortedAndFilteredAds.map((ad, i) => (
             <motion.div
               key={ad.id}
               initial={{ opacity: 0, y: 20 }}
@@ -397,5 +448,3 @@ export default function UserProfilePage() {
     </motion.div>
   );
 }
-
-    
