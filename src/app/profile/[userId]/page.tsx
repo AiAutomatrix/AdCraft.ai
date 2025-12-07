@@ -39,12 +39,7 @@ import {
 } from '@/components/ui/carousel';
 import { useEffect, useState, useMemo } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { notFound, useParams } from 'next/navigation';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+import { notFound, useParams, useRouter, useSearchParams } from 'next/navigation';
 import {
   Popover,
   PopoverContent,
@@ -57,6 +52,8 @@ import { useToast } from '@/hooks/use-toast';
 import ReactMarkdown from 'react-markdown';
 import { textToSpeechAction } from '@/lib/actions';
 import { cn } from '@/lib/utils';
+import { AdDetailModal } from '@/components/ad/ad-detail-modal';
+
 
 function formatDate(timestamp: any): string {
   if (!timestamp) return 'N/A';
@@ -84,11 +81,7 @@ type UserProfile = {
 
 const adTypes: Ad['type'][] = ['sale', 'wanted', 'item', 'service', 'real-estate'];
 
-const AdCard = ({ ad, layout }: { ad: Ad, layout: 'list' | 'grid' }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [isReadingAloud, setIsReadingAloud] = useState(false);
-  const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
-  const { toast } = useToast();
+const AdCard = ({ ad, layout, onClick }: { ad: Ad, layout: 'list' | 'grid', onClick: () => void }) => {
 
   const getBadgeVariant = (type: Ad['type']) => {
     switch (type) {
@@ -123,71 +116,15 @@ const AdCard = ({ ad, layout }: { ad: Ad, layout: 'list' | 'grid' }) => {
     }
   };
 
-  const handleShareAd = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: ad.title,
-          text: ad.content,
-        });
-        toast({
-          title: 'Ad Shared!',
-          description: 'The ad details have been shared.',
-        });
-      } catch (error) {
-        console.log('Share was cancelled or failed', error);
-      }
-    } else {
-      navigator.clipboard.writeText(`${ad.title}\n\n${ad.content}`);
-      toast({
-        title: 'Content Copied',
-        description:
-          'Share feature not available. Ad content copied instead.',
-      });
-    }
-  };
-
-  const handleTextToSpeech = async () => {
-    if (audio) {
-      audio.pause();
-      setAudio(null);
-      setIsReadingAloud(false);
-      return;
-    }
-
-    setIsReadingAloud(true);
-    try {
-      const result = await textToSpeechAction(ad.content);
-      if (result.error) {
-        throw new Error(result.error);
-      }
-      const newAudio = new Audio(result.media);
-      setAudio(newAudio);
-      newAudio.play();
-      newAudio.onended = () => {
-        setIsReadingAloud(false);
-        setAudio(null);
-      };
-    } catch (error) {
-      console.error('Text-to-speech failed:', error);
-      toast({
-        title: 'Read Aloud Failed',
-        description:
-          'Could not generate audio for this ad. Please try again.',
-        variant: 'destructive',
-      });
-      setIsReadingAloud(false);
-    }
-  };
-
   const isListLayout = layout === 'list';
 
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen} asChild>
-      <Card className="flex flex-col overflow-hidden h-full bg-surface-2 border-border/50 break-inside-avoid">
+      <Card 
+        onClick={onClick}
+        className="flex flex-col overflow-hidden h-full bg-surface-2 border-border/50 break-inside-avoid cursor-pointer transition-all duration-300 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1">
         <div className="bg-surface-1 flex items-center justify-center group">
           {ad.images && ad.images.length > 0 ? (
-            <Carousel className="w-full h-full">
+            <Carousel className="w-full h-full pointer-events-none">
               <CarouselContent>
                 {ad.images.map((image, index) => (
                   <CarouselItem key={index}>
@@ -204,8 +141,8 @@ const AdCard = ({ ad, layout }: { ad: Ad, layout: 'list' | 'grid' }) => {
               </CarouselContent>
               {ad.images.length > 1 && (
                 <>
-                  <CarouselPrevious className="absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <CarouselNext className="absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <CarouselPrevious className="absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto" />
+                  <CarouselNext className="absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto" />
                 </>
               )}
             </Carousel>
@@ -233,60 +170,24 @@ const AdCard = ({ ad, layout }: { ad: Ad, layout: 'list' | 'grid' }) => {
             <>
             <CardContent className="flex-grow">
               <div className="space-y-2">
-                {!isOpen && (
                   <p className="text-sm text-text-secondary line-clamp-3">
                     {ad.content}
                   </p>
-                )}
-                <CollapsibleContent>
-                  <ReactMarkdown className="prose dark:prose-invert prose-sm max-w-none">
-                    {ad.content}
-                  </ReactMarkdown>
-                </CollapsibleContent>
               </div>
             </CardContent>
             <CardFooter className="flex justify-between items-center mt-auto pt-4 border-t border-border/50">
-              <CollapsibleTrigger asChild>
-                <Button variant="link" className="p-0 h-auto text-xs">
-                  {isOpen ? 'Read less' : 'Read more'}
-                  <ChevronsUpDown className="h-3 w-3 ml-1" />
-                </Button>
-              </CollapsibleTrigger>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={handleTextToSpeech}
-                  disabled={isReadingAloud && !audio}
-                >
-                  {isReadingAloud && !audio ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Volume2 className="h-4 w-4" />
-                  )}
-                  <span className="sr-only">Read ad aloud</span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={handleShareAd}
-                >
-                  <Share2 className="h-4 w-4" />
-                  <span className="sr-only">Share ad</span>
-                </Button>
-              </div>
+                <p className="text-primary text-xs font-semibold">View Details</p>
             </CardFooter>
             </>
         )}
       </Card>
-    </Collapsible>
   );
 };
 
 export default function UserProfilePage() {
   const params = useParams();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const userId = params.userId as string;
   const firestore = useFirestore();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -295,10 +196,11 @@ export default function UserProfilePage() {
   const [activeFilters, setActiveFilters] = useState<Ad['type'][]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [layout, setLayout] = useState<'list' | 'grid'>('list');
+  const [selectedAd, setSelectedAd] = useState<Ad | null>(null);
   const { toast } = useToast();
 
   const handleShareProfile = () => {
-    navigator.clipboard.writeText(window.location.href);
+    navigator.clipboard.writeText(window.location.origin + `/profile/${userId}`);
     toast({
       title: 'Profile URL Copied!',
       description: 'The link to this public ad page is ready to be shared.',
@@ -306,9 +208,24 @@ export default function UserProfilePage() {
   };
 
   const handleFilterChange = (type: Ad['type'], checked: boolean) => {
-    setActiveFilters(prev => 
-      checked ? [...prev, type] : prev.filter(t => t !== type)
-    );
+    setActiveFilters(prev => {
+        const newFilters = checked ? [...prev, type] : prev.filter(t => t !== type);
+        return newFilters;
+    });
+  };
+
+  const openAdModal = (ad: Ad) => {
+    setSelectedAd(ad);
+    const params = new URLSearchParams(searchParams);
+    params.set('ad', ad.id);
+    router.replace(`/profile/${userId}?${params.toString()}`, { scroll: false });
+  };
+
+  const closeAdModal = () => {
+    setSelectedAd(null);
+    const params = new URLSearchParams(searchParams);
+    params.delete('ad');
+    router.replace(`/profile/${userId}?${params.toString()}`, { scroll: false });
   };
 
   const userAdsCollection = useMemoFirebase(() => {
@@ -342,32 +259,48 @@ export default function UserProfilePage() {
 
     fetchUserProfile();
   }, [firestore, userId]);
-
+  
   const sortedAndFilteredAds = useMemo(() => {
-    let filteredAds = [...(ads || [])];
-
-    // Filter by selected ad types
+    if (!ads) return [];
+    let filteredAds = [...ads];
+    
+    // Filter by selected ad types, but show all if no filters are selected
     if (activeFilters.length > 0) {
-      filteredAds = filteredAds.filter(ad => activeFilters.includes(ad.type));
+        filteredAds = filteredAds.filter(ad => activeFilters.includes(ad.type));
     }
     
     // Filter by search query
     if (searchQuery.trim() !== '') {
-      const lowercasedQuery = searchQuery.toLowerCase();
-      filteredAds = filteredAds.filter(ad => 
-        ad.title.toLowerCase().includes(lowercasedQuery) || 
-        ad.content.toLowerCase().includes(lowercasedQuery)
-      );
+        const lowercasedQuery = searchQuery.toLowerCase();
+        filteredAds = filteredAds.filter(ad => 
+            ad.title.toLowerCase().includes(lowercasedQuery) || 
+            ad.content.toLowerCase().includes(lowercasedQuery)
+        );
     }
-
+    
     // Sort by creation date
     return filteredAds.sort((a, b) => {
-      const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
-      const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
-      if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) return 0;
-      return dateB.getTime() - dateA.getTime();
+        const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
+        const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
+        if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) return 0;
+        return dateB.getTime() - dateA.getTime();
     });
   }, [ads, activeFilters, searchQuery]);
+
+
+  // Effect to open modal if 'ad' query param is present on load
+  useEffect(() => {
+    if (sortedAndFilteredAds.length > 0) {
+      const adIdFromUrl = searchParams.get('ad');
+      if (adIdFromUrl) {
+        const adToOpen = sortedAndFilteredAds.find(ad => ad.id === adIdFromUrl);
+        if (adToOpen) {
+          setSelectedAd(adToOpen);
+        }
+      }
+    }
+  }, [sortedAndFilteredAds, searchParams]);
+
 
   if (profileNotFound) {
     notFound();
@@ -437,7 +370,7 @@ export default function UserProfilePage() {
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className='w-full'>
-                    <Filter className="mr-2 h-4 w-4" /> Filter
+                    <Filter className="mr-2 h-4 w-4" /> Filter ({activeFilters.length > 0 ? activeFilters.length : 'All'})
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-56">
@@ -495,10 +428,18 @@ export default function UserProfilePage() {
               transition={{ duration: 0.5, delay: i * 0.05 }}
               className={cn(layout === 'list' && 'break-inside-avoid')}
             >
-              <AdCard ad={ad} layout={layout} />
+              <AdCard ad={ad} layout={layout} onClick={() => openAdModal(ad)} />
             </motion.div>
           ))}
         </div>
+      )}
+      
+      {selectedAd && (
+        <AdDetailModal 
+            ad={selectedAd}
+            isOpen={!!selectedAd}
+            onClose={closeAdModal}
+        />
       )}
     </motion.div>
   );

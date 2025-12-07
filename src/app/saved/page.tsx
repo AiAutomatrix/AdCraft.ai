@@ -69,15 +69,17 @@ export default function SavedAdsPage() {
   }, [user, isUserLoading, router]);
 
   const handleFilterChange = (type: Ad['type'], checked: boolean) => {
-    setActiveFilters(prev => 
-      checked ? [...prev, type] : prev.filter(t => t !== type)
-    );
+    setActiveFilters(prev => {
+        const newFilters = checked ? [...prev, type] : prev.filter(t => t !== type);
+        return newFilters;
+    });
   };
   
   const sortedAndFilteredAds = useMemo(() => {
-    let filteredAds = [...(ads || [])];
+    if (!ads) return [];
+    let filteredAds = [...ads];
     
-    // Filter by selected ad types
+    // Filter by selected ad types, but show all if no filters are selected
     if (activeFilters.length > 0) {
         filteredAds = filteredAds.filter(ad => activeFilters.includes(ad.type));
     }
@@ -99,6 +101,7 @@ export default function SavedAdsPage() {
         return dateB.getTime() - dateA.getTime();
       });
   }, [ads, activeFilters, searchQuery]);
+
 
   const handleDelete = async (adId: string) => {
     await deleteAd(adId);
@@ -250,7 +253,7 @@ export default function SavedAdsPage() {
                     <Popover>
                         <PopoverTrigger asChild>
                             <Button variant="outline" className="w-full">
-                                <Filter className="mr-2 h-4 w-4" /> Filter
+                                <Filter className="mr-2 h-4 w-4" /> Filter ({activeFilters.length > 0 ? activeFilters.length : 'All'})
                             </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-56">
