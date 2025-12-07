@@ -282,7 +282,7 @@ export default function UserProfilePage() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [profileNotFound, setProfileNotFound] = useState(false);
-  const [activeFilters, setActiveFilters] = useState<Ad['type'][]>(adTypes);
+  const [activeFilters, setActiveFilters] = useState<Ad['type'][]>([]);
   const { toast } = useToast();
 
   const handleShareProfile = () => {
@@ -332,14 +332,18 @@ export default function UserProfilePage() {
   }, [firestore, userId]);
 
   const sortedAndFilteredAds = useMemo(() => {
-    return [...(ads || [])]
-      .filter(ad => activeFilters.includes(ad.type))
-      .sort((a, b) => {
-        const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
-        const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
-        if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) return 0;
-        return dateB.getTime() - dateA.getTime();
-      });
+    const baseAds = [...(ads || [])].sort((a, b) => {
+      const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
+      const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
+      if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) return 0;
+      return dateB.getTime() - dateA.getTime();
+    });
+
+    if (activeFilters.length === 0) {
+      return baseAds;
+    }
+
+    return baseAds.filter(ad => activeFilters.includes(ad.type));
   }, [ads, activeFilters]);
 
   if (profileNotFound) {
@@ -448,3 +452,5 @@ export default function UserProfilePage() {
     </motion.div>
   );
 }
+
+    

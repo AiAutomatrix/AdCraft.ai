@@ -56,7 +56,7 @@ export default function SavedAdsPage() {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   const { toast } = useToast();
-  const [activeFilters, setActiveFilters] = useState<Ad['type'][]>(adTypes);
+  const [activeFilters, setActiveFilters] = useState<Ad['type'][]>([]);
   
   useEffect(() => {
     if (!user && !isUserLoading) {
@@ -71,14 +71,18 @@ export default function SavedAdsPage() {
   };
   
   const sortedAndFilteredAds = useMemo(() => {
-    return [...(ads || [])]
-      .filter(ad => activeFilters.includes(ad.type))
-      .sort((a, b) => {
+    const baseAds = [...(ads || [])].sort((a, b) => {
         const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
         const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
         if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) return 0;
         return dateB.getTime() - dateA.getTime();
       });
+
+    if (activeFilters.length === 0) {
+        return baseAds;
+    }
+
+    return baseAds.filter(ad => activeFilters.includes(ad.type));
   }, [ads, activeFilters]);
 
   const handleDelete = async (adId: string) => {
@@ -370,3 +374,5 @@ export default function SavedAdsPage() {
     </motion.div>
   );
 }
+
+    
