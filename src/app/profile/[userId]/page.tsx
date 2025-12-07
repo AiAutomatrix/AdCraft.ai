@@ -35,7 +35,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from '@/components/ui/carousel';
-import { useEffect, useState, useRef, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { notFound, useParams } from 'next/navigation';
 import {
@@ -48,6 +48,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Input } from '@/components/ui/input';
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from '@/hooks/use-toast';
@@ -283,6 +284,7 @@ export default function UserProfilePage() {
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [profileNotFound, setProfileNotFound] = useState(false);
   const [activeFilters, setActiveFilters] = useState<Ad['type'][]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
 
   const handleShareProfile = () => {
@@ -332,19 +334,30 @@ export default function UserProfilePage() {
   }, [firestore, userId]);
 
   const sortedAndFilteredAds = useMemo(() => {
-    const baseAds = [...(ads || [])].sort((a, b) => {
+    let filteredAds = [...(ads || [])];
+
+    // Filter by selected ad types
+    if (activeFilters.length > 0) {
+      filteredAds = filteredAds.filter(ad => activeFilters.includes(ad.type));
+    }
+    
+    // Filter by search query
+    if (searchQuery.trim() !== '') {
+      const lowercasedQuery = searchQuery.toLowerCase();
+      filteredAds = filteredAds.filter(ad => 
+        ad.title.toLowerCase().includes(lowercasedQuery) || 
+        ad.content.toLowerCase().includes(lowercasedQuery)
+      );
+    }
+
+    // Sort by creation date
+    return filteredAds.sort((a, b) => {
       const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
       const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
       if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) return 0;
       return dateB.getTime() - dateA.getTime();
     });
-
-    if (activeFilters.length === 0) {
-      return baseAds;
-    }
-
-    return baseAds.filter(ad => activeFilters.includes(ad.type));
-  }, [ads, activeFilters]);
+  }, [ads, activeFilters, searchQuery]);
 
   if (profileNotFound) {
     notFound();
@@ -391,37 +404,49 @@ export default function UserProfilePage() {
             </div>
           </div>
         )}
-        <div className="flex gap-2">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline">
-                <Filter className="mr-2 h-4 w-4" /> Filter
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-56">
-              <div className="space-y-4">
-                <h4 className="font-medium leading-none">Filter Ad Types</h4>
-                <div className="grid gap-2">
-                  {adTypes.map((type) => (
-                    <div className="flex items-center space-x-2" key={type}>
-                      <Checkbox
-                        id={`filter-${type}`}
-                        checked={activeFilters.includes(type)}
-                        onCheckedChange={(checked) => handleFilterChange(type, !!checked)}
-                      />
-                      <Label htmlFor={`filter-${type}`} className="capitalize">
-                        {type === 'sale' ? 'Vehicle' : type.replace('-', ' ')}
-                      </Label>
+        <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-2">
+            <div className="relative w-full sm:w-auto">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                    type="search"
+                    placeholder="Search ads..."
+                    className="pl-9 w-full sm:w-64"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
+            </div>
+            <div className='flex gap-2'>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className='w-full'>
+                    <Filter className="mr-2 h-4 w-4" /> Filter
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-56">
+                  <div className="space-y-4">
+                    <h4 className="font-medium leading-none">Filter Ad Types</h4>
+                    <div className="grid gap-2">
+                      {adTypes.map((type) => (
+                        <div className="flex items-center space-x-2" key={type}>
+                          <Checkbox
+                            id={`filter-${type}`}
+                            checked={activeFilters.includes(type)}
+                            onCheckedChange={(checked) => handleFilterChange(type, !!checked)}
+                          />
+                          <Label htmlFor={`filter-${type}`} className="capitalize">
+                            {type === 'sale' ? 'Vehicle' : type.replace('-', ' ')}
+                          </Label>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
-            </PopoverContent>
-          </Popover>
+                  </div>
+                </PopoverContent>
+              </Popover>
 
-          <Button onClick={handleShareProfile} variant="outline">
-            <Share2 className="mr-2 h-4 w-4" /> Share Profile
-          </Button>
+              <Button onClick={handleShareProfile} variant="outline" className='w-full'>
+                <Share2 className="mr-2 h-4 w-4" /> Share
+              </Button>
+            </div>
         </div>
       </div>
 
@@ -432,7 +457,7 @@ export default function UserProfilePage() {
             No Ads Found
           </h2>
           <p className="mt-2 text-text-secondary">
-            {ads && ads.length > 0 ? "No ads match the current filter." : "This user hasn't posted any ads yet."}
+            {ads && ads.length > 0 ? "No ads match the current filter or search." : "This user hasn't posted any ads yet."}
           </p>
         </div>
       ) : (
@@ -452,5 +477,3 @@ export default function UserProfilePage() {
     </motion.div>
   );
 }
-
-    

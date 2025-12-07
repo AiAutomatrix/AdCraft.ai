@@ -30,6 +30,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 
 function formatDate(timestamp: any): string {
     if (!timestamp) return 'N/A';
@@ -57,6 +58,7 @@ export default function SavedAdsPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [activeFilters, setActiveFilters] = useState<Ad['type'][]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   
   useEffect(() => {
     if (!user && !isUserLoading) {
@@ -71,19 +73,30 @@ export default function SavedAdsPage() {
   };
   
   const sortedAndFilteredAds = useMemo(() => {
-    const baseAds = [...(ads || [])].sort((a, b) => {
+    let filteredAds = [...(ads || [])];
+    
+    // Filter by selected ad types
+    if (activeFilters.length > 0) {
+        filteredAds = filteredAds.filter(ad => activeFilters.includes(ad.type));
+    }
+    
+    // Filter by search query
+    if (searchQuery.trim() !== '') {
+        const lowercasedQuery = searchQuery.toLowerCase();
+        filteredAds = filteredAds.filter(ad => 
+            ad.title.toLowerCase().includes(lowercasedQuery) || 
+            ad.content.toLowerCase().includes(lowercasedQuery)
+        );
+    }
+    
+    // Sort by creation date
+    return filteredAds.sort((a, b) => {
         const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
         const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
         if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) return 0;
         return dateB.getTime() - dateA.getTime();
       });
-
-    if (activeFilters.length === 0) {
-        return baseAds;
-    }
-
-    return baseAds.filter(ad => activeFilters.includes(ad.type));
-  }, [ads, activeFilters]);
+  }, [ads, activeFilters, searchQuery]);
 
   const handleDelete = async (adId: string) => {
     await deleteAd(adId);
@@ -212,68 +225,80 @@ export default function SavedAdsPage() {
                 <p className="mt-2 text-text-secondary">Here are all the ads you've crafted.</p>
             </div>
              
-             <div className='flex items-center gap-2'>
-                <Popover>
-                    <PopoverTrigger asChild>
-                        <Button variant="outline">
-                            <Filter className="mr-2 h-4 w-4" /> Filter
-                        </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-56">
-                        <div className="space-y-4">
-                            <h4 className="font-medium leading-none">Filter Ad Types</h4>
-                            <div className="grid gap-2">
-                            {adTypes.map((type) => (
-                                <div className="flex items-center space-x-2" key={type}>
-                                <Checkbox
-                                    id={`filter-saved-${type}`}
-                                    checked={activeFilters.includes(type)}
-                                    onCheckedChange={(checked) => handleFilterChange(type, !!checked)}
-                                />
-                                <Label htmlFor={`filter-saved-${type}`} className="capitalize">
-                                    {type === 'sale' ? 'Vehicle' : type.replace('-', ' ')}
-                                </Label>
+             <div className='flex flex-col sm:flex-row items-center gap-2'>
+                <div className="relative w-full sm:w-auto">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        type="search"
+                        placeholder="Search ads..."
+                        className="pl-9 w-full sm:w-auto"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                </div>
+                <div className='flex items-center gap-2 w-full'>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" className="w-full">
+                                <Filter className="mr-2 h-4 w-4" /> Filter
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-56">
+                            <div className="space-y-4">
+                                <h4 className="font-medium leading-none">Filter Ad Types</h4>
+                                <div className="grid gap-2">
+                                {adTypes.map((type) => (
+                                    <div className="flex items-center space-x-2" key={type}>
+                                    <Checkbox
+                                        id={`filter-saved-${type}`}
+                                        checked={activeFilters.includes(type)}
+                                        onCheckedChange={(checked) => handleFilterChange(type, !!checked)}
+                                    />
+                                    <Label htmlFor={`filter-saved-${type}`} className="capitalize">
+                                        {type === 'sale' ? 'Vehicle' : type.replace('-', ' ')}
+                                    </Label>
+                                    </div>
+                                ))}
                                 </div>
-                            ))}
                             </div>
-                        </div>
-                    </PopoverContent>
-                </Popover>
+                        </PopoverContent>
+                    </Popover>
 
-                <Button asChild className="font-semibold">
-                  <Link href="/create">
-                      <FilePlus className="mr-2 h-4 w-4" />
-                      Create New
-                  </Link>
-              </Button>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="icon">
-                        <MoreVertical className="h-4 w-4" />
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                    <DropdownMenuItem asChild>
-                        <Link href={`/profile/${user.uid}`}>
-                            <User className="mr-2 h-4 w-4" />
-                            <span>View Public Profile</span>
+                    <Button asChild className="font-semibold w-full">
+                        <Link href="/create">
+                            <FilePlus className="mr-2 h-4 w-4" />
+                            New
                         </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleShareProfile}>
-                        <Share2 className="mr-2 h-4 w-4" />
-                        <span>Share Profile Link</span>
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    </Button>
+
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="icon" className="shrink-0">
+                                <MoreVertical className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem asChild>
+                                <Link href={`/profile/${user.uid}`}>
+                                    <User className="mr-2 h-4 w-4" />
+                                    <span>View Public Profile</span>
+                                </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={handleShareProfile}>
+                                <Share2 className="mr-2 h-4 w-4" />
+                                <span>Share Profile Link</span>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
             </div>
       </div>
 
       {sortedAndFilteredAds.length === 0 ? (
         <div className="text-center py-16 bg-surface-2 rounded-xl">
-          <FilePlus className="mx-auto h-16 w-16 text-text-secondary" />
+          <Package className="mx-auto h-16 w-16 text-text-secondary opacity-50" />
           <h2 className="mt-4 font-headline text-3xl font-bold">No Ads Found</h2>
-          <p className="mt-2 text-text-secondary">No ads match your current filter settings.</p>
+          <p className="mt-2 text-text-secondary">No ads match your current filter or search.</p>
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -374,5 +399,3 @@ export default function SavedAdsPage() {
     </motion.div>
   );
 }
-
-    
