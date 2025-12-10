@@ -80,7 +80,16 @@ async function getInitialData(userId: string): Promise<{ userProfile: any | null
             adsCollectionRef.orderBy('createdAt', 'desc').get()
         ]);
 
-        const userProfile = userDoc.exists ? userDoc.data() : null;
+        let userProfile = null;
+        if (userDoc.exists) {
+            const data = userDoc.data();
+            // Serialize timestamps for the userProfile object
+            userProfile = {
+                ...data,
+                createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
+                updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate().toISOString() : new Date().toISOString(),
+            };
+        }
 
         const ads = adsSnapshot.docs.map(doc => {
             const data = doc.data();
