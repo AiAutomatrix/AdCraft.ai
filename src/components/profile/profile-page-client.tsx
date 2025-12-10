@@ -49,23 +49,22 @@ import { cn } from '@/lib/utils';
 import { AdDetailModal } from '@/components/ad/ad-detail-modal';
 
 
-function formatDate(timestamp: any): string {
-  if (!timestamp) return 'N/A';
-  let date: Date;
-  if (timestamp.toDate) { // Firestore Timestamp object
-    date = timestamp.toDate();
-  } else if (typeof timestamp === 'string') {
-    date = new Date(timestamp);
-  } else if (timestamp instanceof Date) {
-    date = timestamp;
-  } else {
-    return 'Invalid Date';
-  }
-  
-  if (isNaN(date.getTime())) {
-    return 'Invalid Date';
-  }
-  return date.toLocaleDateString();
+function ClientFormattedDate({ timestamp }: { timestamp: string }) {
+  const [formattedDate, setFormattedDate] = useState<string | null>(null);
+
+  useEffect(() => {
+    // This code runs only on the client, after hydration.
+    const date = new Date(timestamp);
+    if (!isNaN(date.getTime())) {
+      setFormattedDate(date.toLocaleDateString());
+    } else {
+      setFormattedDate(timestamp); // Fallback to original string if invalid
+    }
+  }, [timestamp]);
+
+  // Render nothing on the server and during initial client render.
+  // The formatted date will appear after the component mounts on the client.
+  return <>{formattedDate}</>;
 }
 
 
@@ -160,7 +159,7 @@ const AdCard = ({ ad, layout, onClick }: { ad: Ad, layout: 'list' | 'grid', onCl
               {ad.type === 'sale' ? 'Vehicle' : ad.type}
             </Badge>
           </div>
-          <CardDescription>Created on {formatDate(ad.createdAt)}</CardDescription>
+          <CardDescription>Created on <ClientFormattedDate timestamp={ad.createdAt as string} /></CardDescription>
         </CardHeader>
         {isListLayout && (
             <>

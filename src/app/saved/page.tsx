@@ -33,23 +33,24 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
-function formatDate(timestamp: any): string {
-    if (!timestamp) return 'N/A';
-    if (timestamp.toDate) {
-      return timestamp.toDate().toLocaleDateString();
+function ClientFormattedDate({ timestamp }: { timestamp: string }) {
+  const [formattedDate, setFormattedDate] = useState<string | null>(null);
+
+  useEffect(() => {
+    // This code runs only on the client, after hydration.
+    const date = new Date(timestamp);
+    if (!isNaN(date.getTime())) {
+      setFormattedDate(date.toLocaleDateString());
+    } else {
+      setFormattedDate(timestamp); // Fallback to original string if invalid
     }
-    if (typeof timestamp === 'string') {
-      try {
-        return new Date(timestamp).toLocaleDateString();
-      } catch (e) {
-        return 'Invalid Date';
-      }
-    }
-    if (timestamp instanceof Date) {
-      return timestamp.toLocaleDateString();
-    }
-    return 'Invalid Date';
+  }, [timestamp]);
+
+  // Render nothing on the server and during initial client render.
+  // The formatted date will appear after the component mounts on the client.
+  return <>{formattedDate}</>;
 }
+
 
 const adTypes: Ad['type'][] = ['sale', 'wanted', 'item', 'service', 'real-estate'];
 
@@ -95,8 +96,8 @@ export default function SavedAdsPage() {
     
     // Sort by creation date
     return filteredAds.sort((a, b) => {
-        const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
-        const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
+        const dateA = a.createdAt ? new Date(a.createdAt as string) : new Date(0);
+        const dateB = b.createdAt ? new Date(b.createdAt as string) : new Date(0);
         if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) return 0;
         return dateB.getTime() - dateA.getTime();
       });
@@ -361,7 +362,7 @@ export default function SavedAdsPage() {
                     <Badge variant={getBadgeVariant(ad.type)} className="capitalize flex-shrink-0">{ad.type === 'sale' ? 'Vehicle' : ad.type}</Badge>
                   </div>
                   <CardDescription>
-                    Created on {formatDate(ad.createdAt)}
+                    Created on <ClientFormattedDate timestamp={ad.createdAt as string} />
                   </CardDescription>
                 </CardHeader>
                 {layout === 'list' && (
