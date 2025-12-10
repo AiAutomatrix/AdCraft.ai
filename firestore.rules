@@ -15,7 +15,8 @@ service cloud.firestore {
 
     // Rules for the 'users' collection
     match /users/{userId} {
-      // Anyone can read a user's profile information
+      // Allow anyone to read a user's profile information.
+      // This is also required for the OG image generator to find the ad's parent user.
       allow read: if true;
       // Users can only write their own user document
       allow update, delete: if isOwner(userId);
@@ -31,13 +32,6 @@ service cloud.firestore {
         // Allow creating an ad if the ad data belongs to the user.
         allow create: if isCreatingAdForSelf(userId);
       }
-    }
-
-    // This is the crucial rule that was missing.
-    // It allows a read operation on the 'ads' collection group, which is
-    // required for the OG image generator's server-side query to work.
-    match /{path=**}/ads/{adId} {
-      allow read: if true;
     }
   }
 }
