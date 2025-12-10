@@ -4,10 +4,6 @@ import { NextRequest } from 'next/server';
 import { getAdData } from '@/lib/server-actions';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 
-// Instructs Next.js to use the Edge Runtime.
-// This is required for @vercel/og to work on Vercel.
-export const runtime = 'edge';
-
 // We can use a custom font if we'd like.
 // const interRegular = fetch(
 //   new URL('../../../../assets/Inter-Regular.ttf', import.meta.url)
