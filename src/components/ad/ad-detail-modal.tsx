@@ -32,7 +32,7 @@ import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { textToSpeechAction } from '@/lib/actions';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface AdDetailModalProps {
   ad: Ad;
@@ -44,6 +44,29 @@ export function AdDetailModal({ ad, isOpen, onClose }: AdDetailModalProps) {
     const { toast } = useToast();
     const [isReadingAloud, setIsReadingAloud] = useState(false);
     const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
+
+    // This effect dynamically adds and removes the og:image meta tag
+    useEffect(() => {
+        if (isOpen && ad) {
+            // Create the meta tag
+            const imageMeta = document.createElement('meta');
+            imageMeta.setAttribute('property', 'og:image');
+            const imageUrl = `${window.location.origin}/api/og/${ad.id}`;
+            imageMeta.setAttribute('content', imageUrl);
+            imageMeta.id = 'og-image-dynamic'; // Give it an ID for easy removal
+
+            // Append it to the head
+            document.head.appendChild(imageMeta);
+
+            // Return a cleanup function to remove the tag when the modal closes
+            return () => {
+                const existingTag = document.getElementById('og-image-dynamic');
+                if (existingTag) {
+                    document.head.removeChild(existingTag);
+                }
+            };
+        }
+    }, [isOpen, ad]);
 
 
   const getBadgeVariant = (type: Ad['type']) => {
