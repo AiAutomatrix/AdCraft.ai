@@ -33,8 +33,9 @@ service cloud.firestore {
       }
     }
 
-    // This section is required for the collection group query used by the OG image generator.
-    // Firestore will provide a link in the error logs to create this index.
+    // This is the crucial rule that was missing.
+    // It allows a read operation on the 'ads' collection group, which is
+    // required for the OG image generator's server-side query to work.
     match /{path=**}/ads/{adId} {
       allow read: if true;
     }
