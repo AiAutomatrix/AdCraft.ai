@@ -53,6 +53,70 @@ import ReactMarkdown from 'react-markdown';
 import { textToSpeechAction } from '@/lib/actions';
 import { cn } from '@/lib/utils';
 import { AdDetailModal } from '@/components/ad/ad-detail-modal';
+import type { Metadata, ResolvingMetadata } from 'next';
+import { getAdData } from '@/lib/server-actions';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
+
+type Props = {
+  params: { userId: string };
+  searchParams: { [key: string]: string | string[] | undefined };
+};
+
+export async function generateMetadata(
+  { params, searchParams }: Props,
+  parent: ResolvingMetadata
+): Promise<Metadata> {
+  const userId = params.userId;
+  const adId = searchParams.ad as string | undefined;
+
+  // If no ad ID is in the URL, use default metadata
+  if (!adId) {
+    return {
+      title: 'AdCraft AI User Profile',
+      description: "Browse ads created by AdCraft AI users.",
+    };
+  }
+
+  // Fetch the specific ad data on the server
+  const ad = await getAdData(adId);
+
+  // If ad isn't found, return default metadata
+  if (!ad) {
+    return {
+      title: 'Ad Not Found - AdCraft AI',
+      description: 'The requested ad could not be found.',
+    };
+  }
+
+  // Get the previous Open Graph images
+  const previousImages = (await parent).openGraph?.images || [];
+  
+  const ogImageUrl = `/api/og/${ad.id}`;
+
+  return {
+    title: ad.title,
+    description: ad.content.substring(0, 150) + '...',
+    openGraph: {
+      title: ad.title,
+      description: ad.content.substring(0, 150) + '...',
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: ad.title,
+        },
+        ...previousImages,
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: ad.title,
+      description: ad.content.substring(0, 150) + '...',
+      images: [ogImageUrl],
+    },
+  };
+}
 
 
 function formatDate(timestamp: any): string {
