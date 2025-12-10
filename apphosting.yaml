@@ -1,0 +1,37 @@
+# The name of the backend resource.
+# This should be the same as the project ID.
+name: studio-494843406-f3e2e
+
+# The location of the backend resource.
+location: us-central1
+
+# The bundles that will be deployed.
+bundles:
+  # The web framework that will be used for the frontend.
+  - type: web
+    # The command to start the web framework.
+    run:
+      # The command to run.
+      command: npm run dev
+    # The build configuration.
+    build:
+      # The command to build the web framework.
+      command: npm run build
+
+  # The AI/ML framework that will be used for the backend.
+  - type: genkit
+    # The command to start the AI/ML framework.
+    run:
+      # The command to run.
+      command: npm run genkit:dev
+    # The build configuration.
+    build:
+      # The command to build the AI/ML framework.
+      command: npm run build
+
+# The Firebase configuration.
+firebase:
+  # The Firestore configuration.
+  firestore:
+    # The Firestore rules file.
+    rules: firestore.rules
