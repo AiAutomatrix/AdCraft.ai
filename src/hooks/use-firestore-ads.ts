@@ -16,12 +16,26 @@ import {
   deleteDoc,
   serverTimestamp,
   getDoc,
+  Timestamp,
 } from 'firebase/firestore';
 import type { Ad } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
+
+// Helper function to serialize Firestore Timestamps
+const serializeTimestamps = (data: any) => {
+  if (!data) return data;
+  const serializedData = { ...data };
+  for (const key in serializedData) {
+    if (serializedData[key] instanceof Timestamp) {
+      serializedData[key] = serializedData[key].toDate().toISOString();
+    }
+  }
+  return serializedData;
+};
+
 
 export function useFirestoreAds() {
   const { user, isUserLoading } = useUser();
@@ -36,10 +50,16 @@ export function useFirestoreAds() {
   }, [firestore, user]);
 
   const {
-    data: ads,
+    data: rawAds, // Rename to indicate it's raw data from the hook
     isLoading: firestoreLoading,
     error: firestoreError,
   } = useCollection<Ad>(userAdsCollection);
+
+  const ads = useMemoFirebase(() => {
+    if (!rawAds) return null;
+    return rawAds.map(serializeTimestamps);
+  }, [rawAds]);
+
 
   useEffect(() => {
     setLoading(isUserLoading || firestoreLoading);
@@ -122,7 +142,8 @@ export function useFirestoreAds() {
         const adRef = doc(firestore, `users/${user.uid}/ads`, adId);
         const docSnap = await getDoc(adRef);
         if (docSnap.exists()) {
-          return { id: docSnap.id, ...docSnap.data() } as Ad;
+          const rawData = { id: docSnap.id, ...docSnap.data() };
+          return serializeTimestamps(rawData) as Ad;
         } else {
           return null;
         }
