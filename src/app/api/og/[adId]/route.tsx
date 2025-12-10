@@ -122,6 +122,6 @@ export async function GET(req: NextRequest, { params }: { params: { adId: string
   } catch (error) {
     console.error(`[OG Image] Failed to generate image for ad ${adId}:`, error);
     // Return a generic error response if something goes wrong during generation.
-    return new Response('Failed to generate image', { status: 500 });
+    return new Response(`Failed to generate image: ${(error as Error).message}`, { status: 500 });
   }
 }
