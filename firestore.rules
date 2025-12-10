@@ -32,5 +32,11 @@ service cloud.firestore {
         allow create: if isCreatingAdForSelf(userId);
       }
     }
+
+    // This section is required for the collection group query used by the OG image generator.
+    // Firestore will provide a link in the error logs to create this index.
+    match /{path=**}/ads/{adId} {
+      allow read: if true;
+    }
   }
 }
