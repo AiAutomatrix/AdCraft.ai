@@ -33,28 +33,22 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
-function formatDate(timestamp: any): string {
-    if (!timestamp) return 'N/A';
-    let date: Date;
-    if (timestamp.toDate) { // Firestore Timestamp object
-      date = timestamp.toDate();
-    } else if (typeof timestamp === 'string') {
-      date = new Date(timestamp);
-    } else if (timestamp instanceof Date) {
-      date = timestamp;
-    } else {
-      return 'Invalid Date';
-    }
+function ClientFormattedDate({ timestamp }: { timestamp: string }) {
+    const [formattedDate, setFormattedDate] = useState(timestamp);
   
-    if (isNaN(date.getTime())) {
-      return 'Invalid Date';
-    }
-    // Use a consistent format to avoid hydration errors
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    return `${month}/${day}/${year}`;
+    useEffect(() => {
+      // Create a date object from the ISO string
+      const date = new Date(timestamp);
+      // Check if the date is valid before formatting
+      if (!isNaN(date.getTime())) {
+        // Format it to the user's local date string. This runs only on the client.
+        setFormattedDate(date.toLocaleDateString());
+      }
+    }, [timestamp]);
+  
+    return <>{formattedDate}</>;
 }
+
 
 const adTypes: Ad['type'][] = ['sale', 'wanted', 'item', 'service', 'real-estate'];
 
@@ -100,8 +94,8 @@ export default function SavedAdsPage() {
     
     // Sort by creation date
     return filteredAds.sort((a, b) => {
-        const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
-        const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
+        const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+        const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
         if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) return 0;
         return dateB.getTime() - dateA.getTime();
       });
@@ -366,7 +360,7 @@ export default function SavedAdsPage() {
                     <Badge variant={getBadgeVariant(ad.type)} className="capitalize flex-shrink-0">{ad.type === 'sale' ? 'Vehicle' : ad.type}</Badge>
                   </div>
                   <CardDescription>
-                    Created on {formatDate(ad.createdAt)}
+                    Created on <ClientFormattedDate timestamp={ad.createdAt as string} />
                   </CardDescription>
                 </CardHeader>
                 {layout === 'list' && (
