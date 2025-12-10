@@ -32,7 +32,7 @@ import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { textToSpeechAction } from '@/lib/actions';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 interface AdDetailModalProps {
   ad: Ad;
@@ -136,6 +136,8 @@ export function AdDetailModal({ ad, isOpen, onClose }: AdDetailModalProps) {
     }
   };
 
+  const adCreationDate = ad?.createdAt ? new Date(ad.createdAt).toLocaleDateString() : 'a while ago';
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl">
@@ -150,7 +152,7 @@ export function AdDetailModal({ ad, isOpen, onClose }: AdDetailModalProps) {
                 </Badge>
             </div>
             <DialogDescription>
-                {`Posted by user on ${new Date(ad.createdAt).toLocaleDateString()}`}
+                {`Posted by user on ${adCreationDate}`}
             </DialogDescription>
         </DialogHeader>
 
