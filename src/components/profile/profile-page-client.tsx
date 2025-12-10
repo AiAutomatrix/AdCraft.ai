@@ -47,6 +47,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { AdDetailModal } from '@/components/ad/ad-detail-modal';
+import { ClientOnly } from '@/components/client-only';
 
 
 function ClientFormattedDate({ timestamp }: { timestamp: string }) {
@@ -62,7 +63,7 @@ function ClientFormattedDate({ timestamp }: { timestamp: string }) {
     }
   }, [timestamp]);
 
-  // Render nothing on the server and during initial client render.
+  // Render nothing on the server and during initial client render to avoid mismatch.
   // The formatted date will appear after the component mounts on the client.
   return <>{formattedDate}</>;
 }
@@ -321,33 +322,34 @@ export default function ProfilePageClient({ initialUserProfile, initialAds }: Pr
                 {layout === 'list' ? <LayoutGrid className="h-4 w-4" /> : <List className="h-4 w-4" />}
                 <span className="sr-only">Toggle Layout</span>
               </Button>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className='w-full'>
-                    <Filter className="mr-2 h-4 w-4" /> Filter ({activeFilters.length > 0 ? activeFilters.length : 'All'})
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-56">
-                  <div className="space-y-4">
-                    <h4 className="font-medium leading-none">Filter Ad Types</h4>
-                    <div className="grid gap-2">
-                      {adTypes.map((type) => (
-                        <div className="flex items-center space-x-2" key={type}>
-                          <Checkbox
-                            id={`filter-${type}`}
-                            checked={activeFilters.includes(type)}
-                            onCheckedChange={(checked) => handleFilterChange(type, !!checked)}
-                          />
-                          <Label htmlFor={`filter-${type}`} className="capitalize">
-                            {type === 'sale' ? 'Vehicle' : type.replace('-', ' ')}
-                          </Label>
-                        </div>
-                      ))}
+              <ClientOnly>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className='w-full'>
+                      <Filter className="mr-2 h-4 w-4" /> Filter ({activeFilters.length > 0 ? activeFilters.length : 'All'})
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-56">
+                    <div className="space-y-4">
+                      <h4 className="font-medium leading-none">Filter Ad Types</h4>
+                      <div className="grid gap-2">
+                        {adTypes.map((type) => (
+                          <div className="flex items-center space-x-2" key={type}>
+                            <Checkbox
+                              id={`filter-${type}`}
+                              checked={activeFilters.includes(type)}
+                              onCheckedChange={(checked) => handleFilterChange(type, !!checked)}
+                            />
+                            <Label htmlFor={`filter-${type}`} className="capitalize">
+                              {type === 'sale' ? 'Vehicle' : type.replace('-', ' ')}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
-
+                  </PopoverContent>
+                </Popover>
+              </ClientOnly>
               <Button onClick={handleShareProfile} variant="outline" className='w-full'>
                 <Share2 className="mr-2 h-4 w-4" /> Share
               </Button>

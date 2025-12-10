@@ -32,6 +32,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { ClientOnly } from '@/components/client-only';
 
 function ClientFormattedDate({ timestamp }: { timestamp: string }) {
   const [formattedDate, setFormattedDate] = useState<string | null>(null);
@@ -46,7 +47,7 @@ function ClientFormattedDate({ timestamp }: { timestamp: string }) {
     }
   }, [timestamp]);
 
-  // Render nothing on the server and during initial client render.
+  // Render nothing on the server and during initial client render to avoid mismatch.
   // The formatted date will appear after the component mounts on the client.
   return <>{formattedDate}</>;
 }
@@ -251,32 +252,34 @@ export default function SavedAdsPage() {
                         {layout === 'list' ? <LayoutGrid className="h-4 w-4" /> : <List className="h-4 w-4" />}
                         <span className="sr-only">Toggle Layout</span>
                     </Button>
-                    <Popover>
-                        <PopoverTrigger asChild>
-                            <Button variant="outline" className="w-full">
-                                <Filter className="mr-2 h-4 w-4" /> Filter ({activeFilters.length > 0 ? activeFilters.length : 'All'})
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-56">
-                            <div className="space-y-4">
-                                <h4 className="font-medium leading-none">Filter Ad Types</h4>
-                                <div className="grid gap-2">
-                                {adTypes.map((type) => (
-                                    <div className="flex items-center space-x-2" key={type}>
-                                    <Checkbox
-                                        id={`filter-saved-${type}`}
-                                        checked={activeFilters.includes(type)}
-                                        onCheckedChange={(checked) => handleFilterChange(type, !!checked)}
-                                    />
-                                    <Label htmlFor={`filter-saved-${type}`} className="capitalize">
-                                        {type === 'sale' ? 'Vehicle' : type.replace('-', ' ')}
-                                    </Label>
-                                    </div>
-                                ))}
-                                </div>
-                            </div>
-                        </PopoverContent>
-                    </Popover>
+                    <ClientOnly>
+                      <Popover>
+                          <PopoverTrigger asChild>
+                              <Button variant="outline" className="w-full">
+                                  <Filter className="mr-2 h-4 w-4" /> Filter ({activeFilters.length > 0 ? activeFilters.length : 'All'})
+                              </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-56">
+                              <div className="space-y-4">
+                                  <h4 className="font-medium leading-none">Filter Ad Types</h4>
+                                  <div className="grid gap-2">
+                                  {adTypes.map((type) => (
+                                      <div className="flex items-center space-x-2" key={type}>
+                                      <Checkbox
+                                          id={`filter-saved-${type}`}
+                                          checked={activeFilters.includes(type)}
+                                          onCheckedChange={(checked) => handleFilterChange(type, !!checked)}
+                                      />
+                                      <Label htmlFor={`filter-saved-${type}`} className="capitalize">
+                                          {type === 'sale' ? 'Vehicle' : type.replace('-', ' ')}
+                                      </Label>
+                                      </div>
+                                  ))}
+                                  </div>
+                              </div>
+                          </PopoverContent>
+                      </Popover>
+                    </ClientOnly>
 
                     <Button asChild className="font-semibold w-full">
                         <Link href="/create">
