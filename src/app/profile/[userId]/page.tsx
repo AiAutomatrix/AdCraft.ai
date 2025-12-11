@@ -1,6 +1,5 @@
 
 import { Ad } from '@/lib/types';
-import { getAdData } from '@/lib/server-actions';
 import type { Metadata, ResolvingMetadata } from 'next';
 import ProfilePageClient from '@/components/profile/profile-page-client';
 import { firestore } from '@/lib/firebase-admin';
@@ -30,7 +29,23 @@ export async function generateMetadata(
   }
 
   // Fetch the specific ad data on the server
-  const ad = await getAdData(adId);
+  let ad: Ad | null = null;
+  try {
+      const adDocRef = firestore.collection('users').doc(userId).collection('ads').doc(adId);
+      const adDoc = await adDocRef.get();
+      if (adDoc.exists) {
+          const adData = adDoc.data();
+          const convertedData = {
+              ...adData,
+              createdAt: adData.createdAt?.toDate?.().toISOString() || new Date().toISOString(),
+              updatedAt: adData.updatedAt?.toDate?.().toISOString() || new Date().toISOString(),
+          };
+          ad = { id: adDoc.id, ...convertedData } as Ad;
+      }
+  } catch (e) {
+      console.error(`Failed to fetch ad data for OG: ${adId}`, e);
+  }
+
 
   // If ad isn't found, return default metadata
   if (!ad) {
@@ -40,10 +55,8 @@ export async function generateMetadata(
     };
   }
 
-  // Get the previous Open Graph images
-  const previousImages = (await parent).openGraph?.images || [];
-  
-  const ogImageUrl = `/api/og/${ad.id}`;
+  // Construct the OG image URL with query params
+  const ogImageUrl = `/api/og/${ad.id}?title=${encodeURIComponent(ad.title)}&imageUrl=${encodeURIComponent(ad.images?.[0] || '')}`;
 
   return {
     title: ad.title,
@@ -58,7 +71,6 @@ export async function generateMetadata(
           height: 630,
           alt: ad.title,
         },
-        ...previousImages,
       ],
     },
     twitter: {
