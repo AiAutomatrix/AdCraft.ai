@@ -29,7 +29,8 @@ export * from './provider';
 export * from './client-provider';
 export * from './firestore/use-collection';
 export * from './firestore/use-doc';
-export * from './auth/use-user';
+// The useUser hook from './auth/use-user' is re-exported from './provider'
+// so we only need to export from one place to avoid conflicts.
 export * from './errors';
 export * from './error-emitter';
 export { getStorage };
