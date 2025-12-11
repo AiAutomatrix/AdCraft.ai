@@ -17,24 +17,25 @@ export async function generateMetadata(
   const userId = params.userId;
   const adId = searchParams.ad as string | undefined;
 
-  // If no ad ID is in the URL, use default metadata
+  // If no ad ID is in the URL, use default metadata for the user's profile
   if (!adId) {
     const userDoc = await firestore.collection('users').doc(userId).get();
     const user = userDoc.data();
-    const title = user?.displayName ? `${user.displayName}'s Ads` : 'AdCraft AI User Profile';
+    const title = user?.displayName ? `${user.displayName}'s Ads on AdCraft AI` : 'AdCraft AI User Profile';
     return {
       title,
       description: "Browse ads created by AdCraft AI users.",
     };
   }
 
-  // Fetch the specific ad data on the server
+  // If there is an ad ID, fetch that specific ad's data
   let ad: Ad | null = null;
   try {
       const adDocRef = firestore.collection('users').doc(userId).collection('ads').doc(adId);
       const adDoc = await adDocRef.get();
       if (adDoc.exists) {
           const adData = adDoc.data();
+          // Ensure timestamps are serializable if they exist
           const convertedData = {
               ...adData,
               createdAt: adData.createdAt?.toDate?.().toISOString() || new Date().toISOString(),
@@ -43,19 +44,20 @@ export async function generateMetadata(
           ad = { id: adDoc.id, ...convertedData } as Ad;
       }
   } catch (e) {
-      console.error(`Failed to fetch ad data for OG: ${adId}`, e);
+      console.error(`[generateMetadata] Failed to fetch ad data for OG: ${adId}`, e);
   }
 
 
-  // If ad isn't found, return default metadata
+  // If ad isn't found, return a clear "not found" metadata
   if (!ad) {
     return {
       title: 'Ad Not Found - AdCraft AI',
-      description: 'The requested ad could not be found.',
+      description: 'The requested ad could not be found or may have been deleted.',
     };
   }
 
-  // Construct the OG image URL with query params
+  // Construct the OG image URL with the ad title and image URL as query parameters.
+  // This is the most reliable way to pass data to the Edge runtime OG generator.
   const ogImageUrl = `/api/og/${ad.id}?title=${encodeURIComponent(ad.title)}&imageUrl=${encodeURIComponent(ad.images?.[0] || '')}`;
 
   return {
