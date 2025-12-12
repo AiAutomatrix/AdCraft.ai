@@ -51,7 +51,9 @@ export async function generateMetadata(
     };
   }
 
-  const ogImageUrl = `/api/og/${ad.id}?title=${encodeURIComponent(ad.title)}&imageUrl=${encodeURIComponent(ad.images?.[0] || '')}`;
+  // Generate a clean, simple URL pointing to the OG image generator API route.
+  // This is the most reliable method for social media crawlers.
+  const ogImageUrl = `/api/og/${ad.id}`;
 
   return {
     title: ad.title,
