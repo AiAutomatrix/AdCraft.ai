@@ -6,7 +6,7 @@
 
 # --- Configuration ---
 DEFAULT_BASE_URL="https://adcraft-ai-cogmora.vercel.app"
-DEFAULT_AD_ID="ec3e4393-8e91-4efe-bfe1-8643db12eeda"
+DEFAULT_AD_ID="37f622a9-938c-4cef-b8bc-d4e4a0263711"
 OUTPUT_FILE="og_image_test_output.png"
 
 # --- Script ---

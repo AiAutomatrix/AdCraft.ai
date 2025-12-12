@@ -9,16 +9,18 @@ const LOCAL_FALLBACK_URL = 'https://images.unsplash.com/photo-1517694712202-14dd
 
 export async function GET(req: NextRequest, { params }: { params: { adId: string } }) {
   const { adId } = params;
-  console.log(`[OG Image] Received request for adId: ${adId}`);
-
-  // The 'imageUrl' and 'title' are now passed as search parameters from the profile page.
-  const imageUrl = req.nextUrl.searchParams.get('imageUrl');
-  const title = req.nextUrl.searchParams.get('title') || 'AdCraft AI Ad';
-
+  
   try {
-    const finalImage = imageUrl ? decodeURIComponent(imageUrl) : LOCAL_FALLBACK_URL;
-    console.log(`[OG Image] Using title: "${title}"`);
-    console.log(`[OG Image] Using final image URL: ${finalImage}`);
+    const ad = await getAdData(adId);
+
+    if (!ad) {
+        return new Response('Ad not found', { status: 404 });
+    }
+
+    const title = ad.title || 'AdCraft AI Ad';
+    const finalImage = ad.images?.[0] ? ad.images[0] : LOCAL_FALLBACK_URL;
+    
+    console.log(`[OG Image] ID: ${adId}, Title: "${title}", Image: ${finalImage}`);
 
     return new ImageResponse(
       (
@@ -77,7 +79,7 @@ export async function GET(req: NextRequest, { params }: { params: { adId: string
       { width: 1200, height: 630 }
     );
   } catch (error) {
-    console.error('[OG Image] Critical error generating image:', error);
+    console.error(`[OG Image] Critical error generating image for adId ${adId}:`, error);
     return new Response('Failed to generate image', { status: 500 });
   }
 }
