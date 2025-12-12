@@ -9,7 +9,6 @@ type Props = {
   searchParams: { [key: string]: string | string[] | undefined };
 };
 
-// This function now works correctly because this file is a Server Component.
 export async function generateMetadata(
   { params, searchParams }: Props,
   parent: ResolvingMetadata
@@ -17,25 +16,23 @@ export async function generateMetadata(
   const userId = params.userId;
   const adId = searchParams.ad as string | undefined;
 
-  // If no ad ID is in the URL, use default metadata for the user's profile
+  const userDoc = await firestore.collection('users').doc(userId).get();
+  const user = userDoc.data();
+  const title = user?.displayName ? `${user.displayName}'s Ads on AdCraft AI` : 'AdCraft AI User Profile';
+
   if (!adId) {
-    const userDoc = await firestore.collection('users').doc(userId).get();
-    const user = userDoc.data();
-    const title = user?.displayName ? `${user.displayName}'s Ads on AdCraft AI` : 'AdCraft AI User Profile';
     return {
       title,
       description: "Browse ads created by AdCraft AI users.",
     };
   }
 
-  // If there is an ad ID, fetch that specific ad's data
   let ad: Ad | null = null;
   try {
       const adDocRef = firestore.collection('users').doc(userId).collection('ads').doc(adId);
       const adDoc = await adDocRef.get();
       if (adDoc.exists) {
           const adData = adDoc.data();
-          // Ensure timestamps are serializable if they exist
           const convertedData = {
               ...adData,
               createdAt: adData.createdAt?.toDate?.().toISOString() || new Date().toISOString(),
@@ -47,8 +44,6 @@ export async function generateMetadata(
       console.error(`[generateMetadata] Failed to fetch ad data for OG: ${adId}`, e);
   }
 
-
-  // If ad isn't found, return a clear "not found" metadata
   if (!ad) {
     return {
       title: 'Ad Not Found - AdCraft AI',
@@ -56,8 +51,7 @@ export async function generateMetadata(
     };
   }
 
-  // Construct the OG image URL. This is the simplest and most reliable way.
-  const ogImageUrl = `/api/og/${ad.id}`;
+  const ogImageUrl = `/api/og/${ad.id}?title=${encodeURIComponent(ad.title)}&imageUrl=${encodeURIComponent(ad.images?.[0] || '')}`;
 
   return {
     title: ad.title,
@@ -96,7 +90,6 @@ async function getInitialData(userId: string): Promise<{ userProfile: any | null
         let userProfile = null;
         if (userDoc.exists) {
             const data = userDoc.data();
-            // Serialize timestamps for the userProfile object
             userProfile = {
                 ...data,
                 createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : new Date().toISOString(),

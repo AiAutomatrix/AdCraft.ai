@@ -1,26 +1,23 @@
 
 import { ImageResponse } from 'next/og';
 import { NextRequest } from 'next/server';
-import { getAdData } from '@/lib/server-actions';
-
-export const runtime = 'edge';
 
 const LOCAL_FALLBACK_URL = 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8MA%3D%3D';
 
+export const runtime = 'edge';
+
 export async function GET(req: NextRequest, { params }: { params: { adId: string } }) {
   const { adId } = params;
-  
+  console.log(`[OG Image] Received request for adId: ${adId}`);
+
+  // The 'imageUrl' and 'title' are passed as search parameters.
+  const imageUrl = req.nextUrl.searchParams.get('imageUrl');
+  const title = req.nextUrl.searchParams.get('title') || 'AdCraft AI Ad';
+
   try {
-    const ad = await getAdData(adId);
-
-    if (!ad) {
-        return new Response('Ad not found', { status: 404 });
-    }
-
-    const title = ad.title || 'AdCraft AI Ad';
-    const finalImage = ad.images?.[0] ? ad.images[0] : LOCAL_FALLBACK_URL;
-    
-    console.log(`[OG Image] ID: ${adId}, Title: "${title}", Image: ${finalImage}`);
+    const finalImage = imageUrl ? decodeURIComponent(imageUrl) : LOCAL_FALLBACK_URL;
+    console.log(`[OG Image] Using title: "${title}"`);
+    console.log(`[OG Image] Using final image URL: ${finalImage}`);
 
     return new ImageResponse(
       (
