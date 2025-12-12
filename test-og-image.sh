@@ -5,53 +5,24 @@
 # and saves the output to a file named 'og_image_test_output.png'.
 
 # --- Configuration ---
-DEFAULT_BASE_URL="https://adcraft-ai-cogmora.vercel.app"
+DEFAULT_BASE_URL="http://localhost:9002"
 # This is the Ad ID for the "Sharp White Chevrolet Silverado"
 DEFAULT_AD_ID="6961d6fd-23c6-4340-9e2b-5245cd3b0c6d"
-# The public user ID for this ad
-DEFAULT_USER_ID="AeTPE84GYyVMM7o0vmJAldCUfQ72"
 OUTPUT_FILE="og_image_test_output.png"
 
 # --- Script ---
 
 # Use provided arguments or fall back to defaults
 BASE_URL=${1:-$DEFAULT_BASE_URL}
-USER_ID=${2:-$DEFAULT_USER_ID}
-AD_ID=${3:-$DEFAULT_AD_ID}
+AD_ID=${2:-$DEFAULT_AD_ID}
 
-# Construct the full public page URL that the crawler will hit
-# We need to hit the profile page, which in turn generates the correct meta tags
-# pointing to the OG image API.
-PUBLIC_PAGE_URL="${BASE_URL}/profile/${USER_ID}?ad=${AD_ID}"
+# The OG image URL no longer needs query parameters. It's a clean URL.
+OG_IMAGE_FULL_URL="${BASE_URL}/api/og/${AD_ID}"
 
 echo "--- Testing Open Graph Image Generation ---"
-echo "This script simulates a social media crawler."
+echo "This script directly fetches the OG image from the API route."
 echo ""
-echo "Step 1: Fetching the public ad page to find the 'og:image' URL..."
-echo "Public Page URL: ${PUBLIC_PAGE_URL}"
-
-# Use curl and grep to extract the og:image URL from the HTML
-# -s: Silent mode
-# -L: Follow redirects
-# grep -oP: Use Perl-compatible regex to find and output only the matching part
-# sed 's/&amp;/\&/g': Replace HTML-encoded ampersands with actual ampersands
-OG_IMAGE_URL_RAW=$(curl -s -L "${PUBLIC_PAGE_URL}" | grep -oP 'property="og:image"\s*content="\K[^"]+')
-
-if [ -z "$OG_IMAGE_URL_RAW" ]; then
-    echo ""
-    echo "❌ Error: Could not find the 'og:image' meta tag on the page."
-    echo "Please check if the page at ${PUBLIC_PAGE_URL} is loading correctly and has the right meta tags."
-    echo "--- Test Complete ---"
-    exit 1
-fi
-
-# The extracted URL is relative, so we need to prepend the base URL
-OG_IMAGE_FULL_URL="${BASE_URL}${OG_IMAGE_URL_RAW}"
-
-echo "Found 'og:image' URL: ${OG_IMAGE_FULL_URL}"
-echo ""
-
-echo "Step 2: Fetching the generated image..."
+echo "Fetching image from: ${OG_IMAGE_FULL_URL}"
 echo "Saving output to: ${OUTPUT_FILE}"
 
 # Use curl to make the request to the actual OG image URL and save the output

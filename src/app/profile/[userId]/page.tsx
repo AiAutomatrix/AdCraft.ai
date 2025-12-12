@@ -61,9 +61,8 @@ export async function generateMetadata(
     };
   }
 
-  // Construct the OG image URL with the ad title and image URL as query parameters.
-  // This is the most reliable way to pass data to the Edge runtime OG generator.
-  const ogImageUrl = `/api/og/${ad.id}?title=${encodeURIComponent(ad.title)}&imageUrl=${encodeURIComponent(ad.images?.[0] || '')}`;
+  // This is the simplified, robust URL. It no longer contains query parameters.
+  const ogImageUrl = `/api/og/${ad.id}`;
 
   return {
     title: ad.title,
