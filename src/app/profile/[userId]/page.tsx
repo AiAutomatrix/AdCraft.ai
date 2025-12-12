@@ -3,34 +3,13 @@ import { Ad } from '@/lib/types';
 import type { Metadata, ResolvingMetadata } from 'next';
 import ProfilePageClient from '@/components/profile/profile-page-client';
 import { firestore } from '@/lib/firebase-admin';
+import { getAdData } from '@/lib/server-actions';
+
 
 type Props = {
   params: { userId: string };
   searchParams: { [key: string]: string | string[] | undefined };
 };
-
-// This server-side function fetches the necessary data for a specific ad
-// before the page is rendered.
-async function getAdForMetadata(userId: string, adId: string): Promise<Ad | null> {
-    try {
-        const adDocRef = firestore.collection('users').doc(userId).collection('ads').doc(adId);
-        const adDoc = await adDocRef.get();
-        if (adDoc.exists) {
-            const adData = adDoc.data();
-            const convertedData = {
-                ...adData,
-                createdAt: adData.createdAt?.toDate?.().toISOString() || new Date().toISOString(),
-                updatedAt: adData.updatedAt?.toDate?.().toISOString() || new Date().toISOString(),
-            };
-            return { id: adDoc.id, ...convertedData } as Ad;
-        }
-        return null;
-    } catch (e) {
-        console.error(`[generateMetadata] Failed to fetch ad data for OG: ${adId}`, e);
-        return null;
-    }
-}
-
 
 export async function generateMetadata(
   { params, searchParams }: Props,
@@ -51,7 +30,7 @@ export async function generateMetadata(
     };
   }
 
-  const ad = await getAdForMetadata(userId, adId);
+  const ad = await getAdData(adId);
 
   // If the ad can't be found, return generic "not found" metadata.
   if (!ad) {
@@ -61,8 +40,9 @@ export async function generateMetadata(
     };
   }
 
-  // This is the simplified, robust URL. It no longer contains query parameters.
-  const ogImageUrl = `/api/og/${ad.id}`;
+  // Construct the OG image URL with the ad title and image URL as query parameters.
+  // This is the most reliable way to pass data to the Edge runtime OG generator.
+  const ogImageUrl = `/api/og/${ad.id}?title=${encodeURIComponent(ad.title)}&imageUrl=${encodeURIComponent(ad.images?.[0] || '')}`;
 
   return {
     title: ad.title,

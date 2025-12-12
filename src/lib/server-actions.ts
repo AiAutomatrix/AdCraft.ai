@@ -30,6 +30,8 @@ export async function getAdData(adId: string): Promise<Ad | null> {
     }
 
     const adData = adDoc.data();
+    if (!adData) return null;
+
     const convertedData = {
         ...adData,
         createdAt: adData.createdAt?.toDate?.().toISOString() || new Date().toISOString(),
