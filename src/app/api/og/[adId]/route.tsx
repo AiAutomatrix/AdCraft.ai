@@ -2,21 +2,23 @@
 import { ImageResponse } from 'next/og';
 import { NextRequest } from 'next/server';
 
-const LOCAL_FALLBACK_URL = 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8MA%3D%3D';
+// A high-quality, generic fallback image that will be used if the ad's image is missing.
+const FALLBACK_IMAGE_URL = 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=1200&h=630&auto=format&fit=crop';
 
-// This is the critical fix: The runtime MUST be 'edge' for @vercel/og.
+// The runtime MUST be 'edge' for @vercel/og to work correctly.
 export const runtime = 'edge';
 
 export async function GET(req: NextRequest, { params }: { params: { adId: string } }) {
   const { adId } = params;
 
-  // The 'imageUrl' and 'title' are now passed as search parameters from the profile page.
+  // The 'imageUrl' and 'title' are passed as search parameters.
   const imageUrl = req.nextUrl.searchParams.get('imageUrl');
   const title = req.nextUrl.searchParams.get('title') || 'AdCraft AI Ad';
 
   try {
-    // Decode the image URL in case it contains special characters.
-    const finalImage = imageUrl ? decodeURIComponent(imageUrl) : LOCAL_FALLBACK_URL;
+    // CRITICAL FIX: Decode the image URL to handle special characters.
+    // If the imageUrl is present, decode it; otherwise, use the reliable fallback.
+    const finalImage = imageUrl ? decodeURIComponent(imageUrl) : FALLBACK_IMAGE_URL;
     
     return new ImageResponse(
       (
@@ -35,6 +37,7 @@ export async function GET(req: NextRequest, { params }: { params: { adId: string
             fontFamily: '"Inter"',
           }}
         >
+          {/* The img tag uses the finalImage URL. It's positioned to cover the background. */}
           <img
             alt=""
             src={finalImage}
@@ -49,6 +52,7 @@ export async function GET(req: NextRequest, { params }: { params: { adId: string
               objectFit: 'cover',
             }}
           />
+          {/* A gradient overlay to make the text more readable. */}
           <div
             style={{
               position: 'absolute',
@@ -71,7 +75,7 @@ export async function GET(req: NextRequest, { params }: { params: { adId: string
     );
   } catch (error) {
     console.error(`[OG Image] Critical error generating image for adId ${adId}:`, error);
-    // Return a generic fallback image on critical failure
+    // Return a generic fallback image on any critical failure.
     return new ImageResponse(
         (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', width: '100%', backgroundColor: '#0C0F1A', color: 'white', fontFamily: '"Inter"' }}>
