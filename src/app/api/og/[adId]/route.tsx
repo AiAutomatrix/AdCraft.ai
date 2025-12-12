@@ -9,17 +9,15 @@ export const runtime = 'edge';
 
 export async function GET(req: NextRequest, { params }: { params: { adId: string } }) {
   const { adId } = params;
-  console.log(`[OG Image] Received request for adId: ${adId}`);
 
   // The 'imageUrl' and 'title' are now passed as search parameters from the profile page.
   const imageUrl = req.nextUrl.searchParams.get('imageUrl');
   const title = req.nextUrl.searchParams.get('title') || 'AdCraft AI Ad';
 
   try {
+    // Decode the image URL in case it contains special characters.
     const finalImage = imageUrl ? decodeURIComponent(imageUrl) : LOCAL_FALLBACK_URL;
-    console.log(`[OG Image] Using title: "${title}"`);
-    console.log(`[OG Image] Using final image URL: ${finalImage}`);
-
+    
     return new ImageResponse(
       (
         <div
@@ -34,7 +32,7 @@ export async function GET(req: NextRequest, { params }: { params: { adId: string
             color: 'white',
             textShadow: '2px 2px 8px rgba(0,0,0,0.7)',
             backgroundColor: 'black',
-            fontFamily: 'Inter',
+            fontFamily: '"Inter"',
           }}
         >
           <img
@@ -61,11 +59,11 @@ export async function GET(req: NextRequest, { params }: { params: { adId: string
               background: 'linear-gradient(to top, rgba(0,0,0,0.95), transparent)',
             }}
           />
-          <div style={{ padding: '60px', zIndex: 10 }}>
-            <h1 style={{ fontSize: 60, fontWeight: 700, margin: 0, lineHeight: 1.1 }}>
+          <div style={{ padding: '60px', zIndex: 10, display: 'flex', flexDirection: 'column' }}>
+            <h1 style={{ fontSize: 60, fontWeight: 700, margin: 0, lineHeight: 1.1, fontFamily: '"Space Grotesk"' }}>
               {title}
             </h1>
-            <p style={{ fontSize: 28, marginTop: 16, opacity: 0.7 }}>View on AdCraft AI</p>
+            <p style={{ fontSize: 28, marginTop: 16, opacity: 0.8 }}>View on AdCraft AI</p>
           </div>
         </div>
       ),
@@ -76,8 +74,8 @@ export async function GET(req: NextRequest, { params }: { params: { adId: string
     // Return a generic fallback image on critical failure
     return new ImageResponse(
         (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', width: '100%', backgroundColor: '#0C0F1A', color: 'white', fontFamily: 'Inter' }}>
-                <h1 style={{ fontSize: 60, fontWeight: 700, margin: 0 }}>AdCraft AI</h1>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', width: '100%', backgroundColor: '#0C0F1A', color: 'white', fontFamily: '"Inter"' }}>
+                <h1 style={{ fontSize: 60, fontWeight: 700, margin: 0, fontFamily: '"Space Grotesk"' }}>AdCraft AI</h1>
                 <p style={{ fontSize: 28, marginTop: 16, opacity: 0.7 }}>Error Generating Image</p>
             </div>
         ),

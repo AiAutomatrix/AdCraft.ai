@@ -10,14 +10,32 @@ DEFAULT_BASE_URL="http://localhost:9002"
 DEFAULT_AD_ID="6961d6fd-23c6-4340-9e2b-5245cd3b0c6d"
 OUTPUT_FILE="og_image_test_output.png"
 
+# --- Data for the Test ---
+# This data needs to be fetched and passed to the API route via query params,
+# just like the `generateMetadata` function does.
+
+# Manually define the title and image URL for the test ad.
+# In a real scenario, you might fetch this from a database first.
+TEST_AD_TITLE="Sharp White Chevrolet Silverado Regular Cab - Ready for Work & Play!"
+# This URL comes from the `ad.images[0]` for that specific ad.
+# NOTE: It's important that this URL is publicly accessible.
+TEST_AD_IMAGE_URL="https://firebasestorage.googleapis.com/v0/b/studio-494843406-f3e2e.appspot.com/o/users%2FAeTPE84GYyVMM7o0vmJAldCUfQ72%2Fads%2F6961d6fd-23c6-4340-9e2b-5245cd3b0c6d%2F2499d0e2-a006-4449-9f79-c793db5f866a.webp?alt=media&token=e939103e-9538-4e8c-850f-62507669a7c6"
+
+
 # --- Script ---
 
 # Use provided arguments or fall back to defaults
 BASE_URL=${1:-$DEFAULT_BASE_URL}
 AD_ID=${2:-$DEFAULT_AD_ID}
 
-# The OG image URL no longer needs query parameters. It's a clean URL.
-OG_IMAGE_FULL_URL="${BASE_URL}/api/og/${AD_ID}"
+# URL-encode the title and image URL to handle special characters safely.
+ENCODED_TITLE=$(printf %s "$TEST_AD_TITLE" | jq -sRr @uri)
+ENCODED_IMAGE_URL=$(printf %s "$TEST_AD_IMAGE_URL" | jq -sRr @uri)
+
+
+# The OG image URL now requires query parameters to function.
+OG_IMAGE_FULL_URL="${BASE_URL}/api/og/${AD_ID}?title=${ENCODED_TITLE}&imageUrl=${ENCODED_IMAGE_URL}"
+
 
 echo "--- Testing Open Graph Image Generation ---"
 echo "This script directly fetches the OG image from the API route."
@@ -27,6 +45,7 @@ echo "Saving output to: ${OUTPUT_FILE}"
 
 # Use curl to make the request to the actual OG image URL and save the output
 # -w: Write out the HTTP status code
+# -L: Follow redirects, which can be important.
 HTTP_STATUS=$(curl -s -L -o "${OUTPUT_FILE}" -w "%{http_code}" "${OG_IMAGE_FULL_URL}")
 
 echo ""
