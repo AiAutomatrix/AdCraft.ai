@@ -7,7 +7,7 @@
  * @param maxSizeInMB The maximum file size in megabytes before resizing is triggered.
  * @param maxWidth The maximum width of the resized image.
  * @param maxHeight The maximum height of the resized image.
- * @param quality The quality of the output WEBP image (0 to 1).
+ * @param quality The quality of the output JPEG image (0 to 1).
  * @returns A Promise that resolves to the data URI of the processed image.
  */
 export function processImage(
@@ -19,8 +19,8 @@ export function processImage(
   ): Promise<string> {
     return new Promise((resolve, reject) => {
       // Check if the file needs resizing
-      if (file.size <= maxSizeInMB * 1024 * 1024 && file.type === 'image/webp') {
-        // If the file is small enough and already a WEBP, just convert to data URI
+      if (file.size <= maxSizeInMB * 1024 * 1024 && file.type === 'image/jpeg') {
+        // If the file is small enough and already a JPEG, just convert to data URI
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result as string);
         reader.onerror = reject;
@@ -58,8 +58,8 @@ export function processImage(
   
           ctx.drawImage(img, 0, 0, width, height);
   
-          // Convert the canvas content to a WEBP data URI
-          const dataUrl = canvas.toDataURL('image/webp', quality);
+          // Convert the canvas content to a JPEG data URI for compatibility with OG image generators
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
           resolve(dataUrl);
         };
         img.onerror = reject;

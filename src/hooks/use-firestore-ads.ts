@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   useFirestore,
   useUser,
@@ -79,7 +79,7 @@ export function useFirestoreAds() {
         for (const image of ad.images) {
           if (image.startsWith('data:')) {
             // This is a new base64 image, upload it
-            const storageRef = ref(storage, `users/${user.uid}/ads/${ad.id}/${uuidv4()}.webp`);
+            const storageRef = ref(storage, `users/${user.uid}/ads/${ad.id}/${uuidv4()}.jpeg`);
             const snapshot = await uploadString(storageRef, image, 'data_url');
             const downloadURL = await getDownloadURL(snapshot.ref);
             imageUrls.push(downloadURL);
